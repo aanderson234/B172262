@@ -1,29 +1,483 @@
 ---
-title: "Assessment"
-output: html_document
-date: "2024-11-06"
+title: "Seasonal Affective Disorder: A Data Analysis"
+author: "Alex Anderson"
+date: "06/11/2024"
+output:
+   html_document:
+    toc: true            
+    toc_float: true      
+    theme: cerulean     
+    highlight: tango     
 ---
+# Introduction 
+Seasonal Affective Disorder (SAD) is a mood disorder characterized by recurring episodes of depression that occur at specific times of the year, typically in autumn and winter. It is believed that SAD is linked to seasonal variations in daylight exposure, affecting patients well-being and mental health.  
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+In Scotland, daylight hours fluctuate significantly throughout the year. Therefore, understanding the relationship between SAD and prescription trends of antidepressants is of public health interests. This analysis will focus on one type of antidepressants, called Selective Serotonin Re-uptake Inhibitors (SSRIs), commonly prescribed for this condition (NHS reference).  
+
+This report will use SSRI prescription patterns across 2022-2023, a period chosen to reflect post-COVID-19 conditions, during which antidepressant prescriptions were likely influenced by both seasonal and pandemic-related factors. By exploring the potential correlation between SSRI prescription trends and regional sunshine hours, this analysis aims to shed light on the temporal and geographical factors influencing SAD-related prescriptions. These findings are intended to provide insights into the seasonal dynamics of mental health care in Scotland.  
+
+```{r, echo=FALSE}
+# Methods
+## Data Sources
+# The following datasets were used:
+# - NHS Scotland prescription data ([link](https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community))
+# - Sunshine hours data from the MET Office ([link](https://www.metoffice.gov.uk/)).
+
+## Data Preparation
+### Set-up Environment
 ```
 
-## R Markdown
+```{r setup, warning=FALSE, message=FALSE, echo=FALSE}
+# load libraries 
+library(readr)
+library(tidyverse)
+library(janitor)
+library(dplyr)
+library(here)
+library(forcats)
+library(gt)
+library(knitr)
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+#set global chunk options 
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, results = 'hide')
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r, echo=FALSE}
+### Import and Clean MET Daylight Hours Data  
+# To analyze the relationship between sunshine hours and SSRI prescriptions, I obtained sunshine data for Scotland (North, East, and West regions) from the MET Office for 2022-2023. The datasets required cleaning to:  
+#     1. Skip metadata rows and manually set column names.  
+#     2. Filter for the required years and convert values to numeric.  
+#     3. Restructure the data into long format for easier merging with prescription data.  
+# The load_sunshine_data() function automates this process for each region, ensuring reproducibility and efficiency.  
+# 
+# Function for Loading and Cleaning Sunshine Data: 
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r import MET data, echo=FALSE}
+load_sunshine_data <- function(url, years) {
+raw_data <- read_lines(url)                    # Read the file as lines of text
+data_lines <- raw_data[8:length(raw_data)] %>% # read raw data&start from 8th row (skip title)
+  str_split_fixed("\\s+", 18) %>%              #split by white-space, creating 18 columns
+  as_tibble()                                  #convert to a tibble 
+
+# Assign meaningful column names. 
+colnames(data_lines) <- c("Year", month.abb, "Winter", "Spring", "Summer", "Autumn", "Annual")
+
+# Clean and filter data. 
+cleaned_data <- data_lines %>%
+ mutate(across(everything(),as.numeric)) %>%  # convert all columns to numeric 
+  filter(Year %in% years) %>%                 # only keep rows for specified years
+  select(Year, Jan:Dec) %>%                   # exclude seasonal aggregates 
+
+# pivot to long format for easier merging and analysis
+   pivot_longer(
+      cols = Jan:Dec,                         # reshape monthly columns 
+      names_to = "Month",                     # create new column for month names 
+      values_to = "Sunshine Hours")           # create column for sunshine hours 
+
+#return cleaned and reshaped data 
+return(cleaned_data)
+}
+```
+
+Load and Combine Regional Data:
+```{r, echo=FALSE}
+#load sunshine data for regions 
+north <- load_sunshine_data("https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Sunshine/date/Scotland_N.txt",c(2022,2023)) 
+
+east <- load_sunshine_data("https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Sunshine/date/Scotland_E.txt",c(2022,2023))
+
+west <- load_sunshine_data("https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Sunshine/date/Scotland_W.txt",c(2022,2023))
+
+#Combine datasets and add region labels  
+sunlight_data <- bind_rows(
+  north %>% mutate(Region = "north"),
+  east %>% mutate(Region = "east"),
+  west %>% mutate(Region = "west")
+  ) %>% 
+  clean_names()                            #Standardize column names 
+
+# View final data set 
+head(sunlight_data)
+``` 
+
+```{r, echo=FALSE}
+### Import Prescription Data  
+# 
+# To analyze SSRI prescription trends across 2022-2023, I needed to process 24 large monthly datasets. Downloading and cleaning these files manually would be inefficient and error-prone. Instead, I automated the workflow by:  
+# 
+#     1. Creating a resource_mapping.csv file to store URLs for each month's dataset.  
+#     2. Developing a function (process_monthly_data) to download, filter, and summarize the data programmatically. This function identifies SSRIs using British National Formulary (BNF) codes and drug names, then aggregates prescriptions by health board.  
+#     3. Batch processing all datasets using a grid of year-month combinations.  
+#     
+# To ensure accuracy, I validated the processed data by checking for missing values, verifying URLs, and confirming the integrity of parsing operations. The final cleaned dataset is saved as processed_prescriptions.csv for reuse in further analysis. 
+# 
+# Step 1: Resource Mapping  
+# ```{r import prescription data, echo=FALSE}
+# resource_mapping <- read_csv(here("data", "resource_mapping.csv"))
+```
+
+
+```{r monthly function, echo=FALSE}
+#Step 2: Function to Process Montly Data  
+# process_monthly_data <- function(resource_mapping, year, month) {
+#     resource_url <- resource_mapping %>%
+#     filter(year == !!year & month == !!month) %>%
+#     pull(resource_url)              # Retrieve the resource URL for the given year and month
+#   
+#   print(paste("Processing:", resource_url))  # Debugging output
+#   
+#   tryCatch({
+#     # Read the CSV directly from the URL
+#     monthly_data <- read_csv(resource_url, show_col_types = FALSE)
+#     # Filter for SSRIs
+#     ssri_data <- monthly_data %>%
+#       filter(
+#         str_detect(BNFItemCode, "^040303") | 
+#           str_detect(BNFItemDescription,
+# "citalopram|fluoxetine|sertraline|paroxetine|escitalopram")  #I filtered by BNF code and the drug name to try and ensure no SSRIs were missing due to typos.                     
+#       )
+#     # Summarize the data by healthboard 
+#     summarized_data <- ssri_data %>%
+#       group_by(HBT) %>%
+#       summarize(
+#         TotalPaidItems = sum(NumberOfPaidItems, na.rm = TRUE),
+#         .groups = "drop"
+#       ) %>%
+#       mutate(Year = year, Month = month) # add year and month for tracking 
+#     
+#     return(summarized_data)
+#   }, error = function(e) {
+#     message(sprintf("Failed to process data for %04d-%02d: %s", year, month, e$message))
+#     return(tibble()) #  return an empty tibble if an error occurs 
+#   })
+# }
+```
+
+```{r test function, echo=FALSE}
+# (Testing the function)
+# test_data <- process_monthly_data(resource_mapping, 2022, 1)
+# print(test_data)
+```
+
+ 
+```{r import all months, echo=FALSE}
+#Step 3: Batch Processing for all Months 
+# Step 3:  
+# # Define years and months 
+# years <- 2022:2023
+# months <- 1:12
+# 
+# # Generate a grid of year and month combinations
+# year_month_grid <- expand_grid(year = years, month = months)
+# 
+# # Process all months and combine the results
+# all_prescription_data <- year_month_grid %>%
+#   mutate(data = map2(year, month, ~ process_monthly_data(resource_mapping, .x, .y))) %>%
+#   unnest(data)
+```
+
+```{r troubleshoot, echo=FALSE}
+# 
+# Validation:  
+# The processed data was validated to ensure accuracy:  
+# - Parsing: No parsing issues were identified.  
+# - Missing Data: All rows contained complete prescription counts.  
+# - URL Verification: All resource URLs were valid and accessible.  
+
+# # Identify parsing issues
+# problems <- problems(all_prescription_data)
+# View(problems)
+# #produced an empty table indicating no parsing problems occurred whilst reading in the csv files
+# 
+# # Filter rows with missing or empty data
+# all_prescription_data %>% filter(is.na(TotalPaidItems))
+# # the tibble returned has zero rows, meaning no rows are missing or failed to process 
+# 
+# #check for missing data 
+# summary(all_prescription_data)
+# #indicates that the data is complete and looks correct, with meaningful values in TotalPaidItems
+# 
+# #url verification
+# unique(resource_mapping$resource_url)
+# #all URLs in resource_mapping appear to be valid, suggesting no connectivity issues.
+```
+
+
+```{r final cleanign of prescription data, echo=FALSE}
+#Final Cleaning and Saving
+# # standardise month names for future merging and remove extra columns 
+# all_prescription_data <- all_prescription_data %>%
+#   mutate(month = month.abb[Month]) %>% 
+#   select(-Year)  
+# 
+# # Save the final dataset for reuse
+# write_csv(all_prescription_data, "data/processed_prescriptions.csv")
+
+# Load the saved dataset for further analysis
+all_prescription_data <- read_csv(here("data", "processed_prescriptions.csv"))
+```
+
+```{r merge prescription with hb, echo=FALSE}
+## Wrangling Data 
+#Merge with Health Board Names Data
+
+#read in hb names
+hb_names <- read_csv(here("data","HB_names_Scotland.csv")) %>% 
+  clean_names()
+
+#select only hb and hbname columnms 
+hb_names_only <- hb_names %>% 
+  select(hb, hb_name)
+
+#merge hb names with my data 
+hb_ssri_prescription_data <- all_prescription_data %>% 
+  left_join(hb_names_only, by = c("HBT" = "hb"))
+
+# Check the result
+summary(hb_ssri_prescription_data)
+head(hb_ssri_prescription_data)
+
+# Look for rows with missing HBName
+filter(hb_ssri_prescription_data, is.na(hb_name))
+```
+
+```{r assign regions, echo=FALSE}
+#assigning regions
+region_ssri_prescriptions <- hb_ssri_prescription_data %>% 
+  mutate(region = case_when(
+    hb_name %in% c("NHS Highland", "NHS Grampian","NHS Orkney","NHS Shetland", "NHS Western Isles") ~ "north", 
+    hb_name %in% c("NHS Greater Glasgow and Clyde", "NHS Ayrshire and Arran", "NHS Lanarkshire", "NHS Dumfries and Galloway") ~ "west", 
+    hb_name %in% c("NHS Lothian", "NHS Fife", "NHS Tayside", "NHS Forth Valley", "NHS Borders") ~ "east"
+  ))
+```
+
+```{r reorder table, echo=FALSE}
+#rearrange
+region_ssri_prescriptions <- region_ssri_prescriptions %>% 
+  select(year, month, region, hb_name, TotalPaidItems) %>% 
+#cleaning the table 
+  clean_names()
+```
+
+  
+```{r population data, echo=FALSE}
+### Import and Clean Population Data  
+
+#import population
+population_data <- read_csv(here("data", "population_data.csv")) %>% 
+  clean_names() #standardize names 
+
+#filter population to what i need
+filtered_population <- population_data %>% 
+  select(year, hb, sex, all_ages) %>% 
+  filter(year %in% c(2022, 2023), #filter for required years
+         sex == "All",            # include only total population
+         hb != "S92000003")       # exclude Scotland-wide summary
+
+#merge with health board names 
+hb_population <- filtered_population %>% 
+  left_join(hb_names_only, by = "hb") 
+
+# Check for unmatched rows in the merge
+anti_join(filtered_population, hb_names_only, by = "hb")
+#output displays there were no unmatched rows so my merge was successful. 
+
+#rearrange for clarity and remove hb and sex as no need for these columns. 
+hb_population <- hb_population %>% 
+  select(year, hb_name, population = all_ages) # rename all_ages 
+```
+
+```{r merge prese + pop, echo=FALSE}
+### Merge Prescriptions and Population Data 
+
+# Merge population data into prescription data
+prescription_population_data <- region_ssri_prescriptions %>%
+  left_join(hb_population, by = c("year", "hb_name"))
+
+# Check the merge
+summary(prescription_population_data)
+filter(prescription_population_data, is.na(population))  # Check for unmatched rows
+#the merge was successful
+```
+
+
+```{r metrics per capita, echo=FALSE}
+### Calculating Metrics per Capita
+
+# Add per capita metrics
+final_prescription_data <- prescription_population_data %>%
+  mutate(prescriptions_per_capita = total_paid_items / population)
+
+# View the first few rows
+head(final_prescription_data)
+
+# Summary statistics
+summary(final_prescription_data)
+
+```
+
+```{r final dataset, echo=FALSE}
+### Merge Final Prescription Data with Sunshine Hours 
+
+final_data <- final_prescription_data %>%
+  left_join(sunlight_data, by = c("year", "month", "region"))
+
+# Summary of the merged dataset
+summary(final_data)
+
+# Check for missing sunlight data
+filter(final_data, is.na(sunshine_hours))
+
+head(final_data)
+```
+
+# Results 
+### Summary Table  
+```{r summary table, echo=FALSE}
+#prepare summary data
+scotland_summary <- final_data %>%
+  group_by(year, month) %>%
+  summarize(
+    total_prescriptions = sum(total_paid_items, na.rm = TRUE),
+    avg_sunshine_hours = mean(sunshine_hours, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    month = factor(month, levels = month.abb)  # Ensure months are ordered chronologically
+  ) %>%
+  arrange(year, month)  # Order by year and month
+
+#sort into seasons
+scotland_seasonal_summary <- scotland_summary %>%
+  mutate(season = case_when(
+    month %in% c("Dec", "Jan", "Feb") ~ "Winter",
+    month %in% c("Mar", "Apr", "May") ~ "Spring",
+    month %in% c("Jun", "Jul", "Aug") ~ "Summer",
+    month %in% c("Sep", "Oct", "Nov") ~ "Autumn"
+  )) %>%
+  group_by(year, season) %>%
+  summarize(
+    total_prescriptions = sum(total_prescriptions, na.rm = TRUE),
+    avg_sunshine_hours = mean(avg_sunshine_hours, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Precompute maximum prescriptions for each year
+max_2022 <- max(scotland_seasonal_summary$total_prescriptions[scotland_seasonal_summary$year == 2022], na.rm = TRUE)
+max_2023 <- max(scotland_seasonal_summary$total_prescriptions[scotland_seasonal_summary$year == 2023], na.rm = TRUE)
+```
+
+```{r, results='asis'}
+# Create the table
+seasonal_summary_gt <- scotland_seasonal_summary %>%
+  gt(rowname_col = "season") %>%                      # Use Season as row labels
+  # Group rows by year
+  tab_row_group(
+    label = md("**2022**"),
+    rows = scotland_seasonal_summary$year == 2022
+  ) %>%
+  tab_row_group(
+    label = md("**2023**"),
+    rows = scotland_seasonal_summary$year == 2023
+  ) %>%
+  # Add a title and subtitle (with footnote)
+  tab_header(
+    title = md("**Seasonal Summary: Prescriptions and Sunshine Hours**"),
+    subtitle = md("Tracking *SSRI^1^* Prescription Trends Alongside Sunshine Patterns in Scotland")  
+  ) %>%
+  # Add footnote for SSRI
+  tab_footnote(
+    footnote = "SSRI: Selective Serotonin Reuptake Inhibitors."
+  ) %>%
+  # Add a source note for data origin
+  tab_source_note(
+    source_note = "Data sources: Sunshine hours from Meteorological Office; SSRI prescriptions from NHS Scotland."
+  ) %>%
+  # Format the "Total Prescriptions" column with no decimals
+  fmt_number(
+    columns = "total_prescriptions",
+    decimals = 0  # No decimals
+  ) %>%
+  # Format the "Avg. Sunshine Hours" column with 3 decimals
+  fmt_number(
+    columns = "avg_sunshine_hours",
+    decimals = 2  # 2 decimals for precision
+  ) %>%
+  # Hide the "year" column
+  cols_hide(
+    columns = "year"
+  ) %>%
+  # Adjust column labels
+  cols_label(
+    season = "Season",
+    total_prescriptions = md("**Total Prescriptions**"),
+    avg_sunshine_hours = md("**Avg. Sunshine Hours**")
+  ) %>%
+  # Add a spanner with updated text
+  tab_spanner(
+    label = "Seasonal Metrics (2022-2023)",
+    columns = c(total_prescriptions, avg_sunshine_hours)
+  ) %>%
+  tab_style(
+    style = cell_text(size = "10px", weight = "bold"),  # Bold and reduced spanner header size
+    locations = cells_column_spanners(spanners = "Seasonal Metrics (2022-2023)")
+  ) %>%
+  # Right-align numerical data
+  tab_style(
+    style = cell_text(align = "right"),
+    locations = cells_body(columns = c(total_prescriptions, avg_sunshine_hours))
+  ) %>%
+  # Highlight rows with Avg. Sunshine Hours < 50 to highlight lowest
+  tab_style(
+    style = list(
+      cell_fill(color = "#F7BCAC"),
+      cell_text(weight = "bold")),      # make stand out more 
+    locations = cells_body(
+      columns = c(avg_sunshine_hours),
+      rows = avg_sunshine_hours < 50
+    )
+  ) %>%
+  # Highlight highest total_prescriptions in each year 
+  tab_style(
+    style = list(
+      cell_fill(color = "#F37A48"),
+      cell_text(weight = "bold")), # Highlight max prescriptions
+    locations = cells_body(
+      columns = c(total_prescriptions),
+      rows = total_prescriptions == max_2022 | total_prescriptions == max_2023
+    )
+  ) %>%
+  # Add light striping to alternate rows for ease of reader 
+  tab_style(
+    style = cell_fill(color = "#FAF5EF"),  
+    locations = cells_body(
+      rows = seq(1, nrow(scotland_seasonal_summary), 2)  # Select every other row
+    )
+  ) %>%
+  # Highlight year rows
+  tab_style(
+    style = list(
+      cell_fill(color = "#B7410E"),  # make tab headers stand out
+      cell_text(color = "white", weight = "bold")      # Bold text for emphasis
+    ),
+    locations = cells_row_groups(groups = everything())# Apply to all year row groups
+  ) %>% 
+  # Compact table spacing
+  tab_options(
+    table.font.size = "small",
+    data_row.padding = px(5)  # Adjust row padding
+  ) 
+
+seasonal_summary_gt
+```
+
+The table highlights seasonal trends in SSRI prescriptions and sunshine hours in Scotland.
+Interestingly, the table shows that prescription rates peak in Spring 2023, not in winter. While the sunshine hours follow typical seasonal patterns, with the lowest in the winter and highest in the summer, the prescriptions do not reflect this. The spike in spring may suggest a lag effect between reduced daylight hours and SAD-related symptoms.  
+
+Next, I will investigate regional variations in sunlight and SSRI prescription rates to provide more context for these trends.   
+
+-> hoping 2 maps side by side one which shows total prescriptions and one which shows prescriptions per capita  
+
+
+
