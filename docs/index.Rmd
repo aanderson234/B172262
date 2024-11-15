@@ -10,9 +10,9 @@ output:
     highlight: tango     
 ---
 # Introduction 
-Seasonal Affective Disorder (SAD) is a mood disorder characterized by recurring episodes of depression that occur at specific times of the year, typically in autumn and winter. It is believed that SAD is linked to seasonal variations in daylight exposure, affecting patients well-being and mental health.  
+Seasonal Affective Disorder (SAD) is a mood disorder characterised by recurring episodes of depression that occur at specific times of the year, typically in autumn and winter. Seasonal variations in sunshine exposure are thought to be connected to SAD, impacting patients' mental and physical health.
 
-In Scotland, daylight hours fluctuate significantly throughout the year. Therefore, understanding the relationship between SAD and prescription trends of antidepressants is of public health interests. This analysis will focus on one type of antidepressants, called Selective Serotonin Re-uptake Inhibitors (SSRIs), commonly prescribed for this condition (NHS reference).  
+In Scotland, daylight hours fluctuate significantly throughout the year. Therefore, understanding the relationship between SAD and prescription trends of antidepressants is of public health interest. This analysis will focus on one type of antidepressant, called Selective Serotonin Re-uptake Inhibitors (SSRIs), commonly prescribed for this condition (NHS reference). 
 
 This report will use SSRI prescription patterns across 2022-2023, a period chosen to reflect post-COVID-19 conditions, during which antidepressant prescriptions were likely influenced by both seasonal and pandemic-related factors. By exploring the potential correlation between SSRI prescription trends and regional sunshine hours, this analysis aims to shed light on the temporal and geographical factors influencing SAD-related prescriptions. These findings are intended to provide insights into the seasonal dynamics of mental health care in Scotland.  
 
@@ -479,5 +479,8 @@ Next, I will investigate regional variations in sunlight and SSRI prescription r
 
 -> hoping 2 maps side by side one which shows total prescriptions and one which shows prescriptions per capita  
 
+OR
+
+I will go on to assess and visualise which month has the highest prescriptions (before moving onto a map). 
 
 
