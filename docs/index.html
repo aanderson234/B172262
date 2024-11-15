@@ -1560,17 +1560,17 @@ Analysis</h1>
 
 <div id="introduction" class="section level1">
 <h1>Introduction</h1>
-<p>Seasonal Affective Disorder (SAD) is a mood disorder characterized by
+<p>Seasonal Affective Disorder (SAD) is a mood disorder characterised by
 recurring episodes of depression that occur at specific times of the
-year, typically in autumn and winter. It is believed that SAD is linked
-to seasonal variations in daylight exposure, affecting patients
-well-being and mental health.</p>
+year, typically in autumn and winter. Seasonal variations in sunshine
+exposure are thought to be connected to SAD, impacting patients’ mental
+and physical health.</p>
 <p>In Scotland, daylight hours fluctuate significantly throughout the
 year. Therefore, understanding the relationship between SAD and
-prescription trends of antidepressants is of public health interests.
-This analysis will focus on one type of antidepressants, called
-Selective Serotonin Re-uptake Inhibitors (SSRIs), commonly prescribed
-for this condition (NHS reference).</p>
+prescription trends of antidepressants is of public health interest.
+This analysis will focus on one type of antidepressant, called Selective
+Serotonin Re-uptake Inhibitors (SSRIs), commonly prescribed for this
+condition (NHS reference).</p>
 <p>This report will use SSRI prescription patterns across 2022-2023, a
 period chosen to reflect post-COVID-19 conditions, during which
 antidepressant prescriptions were likely influenced by both seasonal and
@@ -1580,13 +1580,12 @@ to shed light on the temporal and geographical factors influencing
 SAD-related prescriptions. These findings are intended to provide
 insights into the seasonal dynamics of mental health care in
 Scotland.</p>
-<p>Load and Combine Regional Data:</p>
 </div>
 <div id="results" class="section level1">
 <h1>Results</h1>
 <div id="summary-table" class="section level3">
 <h3>Summary Table</h3>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># Create the table</span></span>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># Create table</span></span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>seasonal_summary_gt <span class="ot">&lt;-</span> scotland_seasonal_summary <span class="sc">%&gt;%</span></span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>  <span class="fu">gt</span>(<span class="at">rowname_col =</span> <span class="st">&quot;season&quot;</span>) <span class="sc">%&gt;%</span>                      <span class="co"># Use Season as row labels</span></span>
 <span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>  <span class="co"># Group rows by year</span></span>
@@ -1603,7 +1602,7 @@ Scotland.</p>
 <span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a>    <span class="at">title =</span> <span class="fu">md</span>(<span class="st">&quot;**Seasonal Summary: Prescriptions and Sunshine Hours**&quot;</span>),</span>
 <span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="fu">md</span>(<span class="st">&quot;Tracking *SSRI^1^* Prescription Trends Alongside Sunshine Patterns in Scotland&quot;</span>)  </span>
 <span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a>  <span class="co"># Add footnote for SSRI</span></span>
+<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a>  <span class="co"># Add footnote directly to &#39;SSRI&#39;</span></span>
 <span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a>  <span class="fu">tab_footnote</span>(</span>
 <span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a>    <span class="at">footnote =</span> <span class="st">&quot;SSRI: Selective Serotonin Reuptake Inhibitors.&quot;</span></span>
 <span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
@@ -1611,15 +1610,15 @@ Scotland.</p>
 <span id="cb1-23"><a href="#cb1-23" tabindex="-1"></a>  <span class="fu">tab_source_note</span>(</span>
 <span id="cb1-24"><a href="#cb1-24" tabindex="-1"></a>    <span class="at">source_note =</span> <span class="st">&quot;Data sources: Sunshine hours from Meteorological Office; SSRI prescriptions from NHS Scotland.&quot;</span></span>
 <span id="cb1-25"><a href="#cb1-25" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb1-26"><a href="#cb1-26" tabindex="-1"></a>  <span class="co"># Format the &quot;Total Prescriptions&quot; column with no decimals</span></span>
+<span id="cb1-26"><a href="#cb1-26" tabindex="-1"></a>  <span class="co"># Format the &quot;Total Prescriptions&quot; column with no decimals for clarity</span></span>
 <span id="cb1-27"><a href="#cb1-27" tabindex="-1"></a>  <span class="fu">fmt_number</span>(</span>
 <span id="cb1-28"><a href="#cb1-28" tabindex="-1"></a>    <span class="at">columns =</span> <span class="st">&quot;total_prescriptions&quot;</span>,</span>
-<span id="cb1-29"><a href="#cb1-29" tabindex="-1"></a>    <span class="at">decimals =</span> <span class="dv">0</span>  <span class="co"># No decimals</span></span>
+<span id="cb1-29"><a href="#cb1-29" tabindex="-1"></a>    <span class="at">decimals =</span> <span class="dv">0</span></span>
 <span id="cb1-30"><a href="#cb1-30" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb1-31"><a href="#cb1-31" tabindex="-1"></a>  <span class="co"># Format the &quot;Avg. Sunshine Hours&quot; column with 3 decimals</span></span>
+<span id="cb1-31"><a href="#cb1-31" tabindex="-1"></a>  <span class="co"># Format the &quot;Avg. Sunshine Hours&quot; column with 2 decimals for precision </span></span>
 <span id="cb1-32"><a href="#cb1-32" tabindex="-1"></a>  <span class="fu">fmt_number</span>(</span>
 <span id="cb1-33"><a href="#cb1-33" tabindex="-1"></a>    <span class="at">columns =</span> <span class="st">&quot;avg_sunshine_hours&quot;</span>,</span>
-<span id="cb1-34"><a href="#cb1-34" tabindex="-1"></a>    <span class="at">decimals =</span> <span class="dv">2</span>  <span class="co"># 2 decimals for precision</span></span>
+<span id="cb1-34"><a href="#cb1-34" tabindex="-1"></a>    <span class="at">decimals =</span> <span class="dv">2</span>  </span>
 <span id="cb1-35"><a href="#cb1-35" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
 <span id="cb1-36"><a href="#cb1-36" tabindex="-1"></a>  <span class="co"># Hide the &quot;year&quot; column</span></span>
 <span id="cb1-37"><a href="#cb1-37" tabindex="-1"></a>  <span class="fu">cols_hide</span>(</span>
@@ -1631,7 +1630,7 @@ Scotland.</p>
 <span id="cb1-43"><a href="#cb1-43" tabindex="-1"></a>    <span class="at">total_prescriptions =</span> <span class="fu">md</span>(<span class="st">&quot;**Total Prescriptions**&quot;</span>),</span>
 <span id="cb1-44"><a href="#cb1-44" tabindex="-1"></a>    <span class="at">avg_sunshine_hours =</span> <span class="fu">md</span>(<span class="st">&quot;**Avg. Sunshine Hours**&quot;</span>)</span>
 <span id="cb1-45"><a href="#cb1-45" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb1-46"><a href="#cb1-46" tabindex="-1"></a>  <span class="co"># Add a spanner with updated text</span></span>
+<span id="cb1-46"><a href="#cb1-46" tabindex="-1"></a>  <span class="co"># Add a spanner</span></span>
 <span id="cb1-47"><a href="#cb1-47" tabindex="-1"></a>  <span class="fu">tab_spanner</span>(</span>
 <span id="cb1-48"><a href="#cb1-48" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">&quot;Seasonal Metrics (2022-2023)&quot;</span>,</span>
 <span id="cb1-49"><a href="#cb1-49" tabindex="-1"></a>    <span class="at">columns =</span> <span class="fu">c</span>(total_prescriptions, avg_sunshine_hours)</span>
@@ -1676,31 +1675,31 @@ Scotland.</p>
 <span id="cb1-88"><a href="#cb1-88" tabindex="-1"></a>  <span class="fu">tab_style</span>(</span>
 <span id="cb1-89"><a href="#cb1-89" tabindex="-1"></a>    <span class="at">style =</span> <span class="fu">list</span>(</span>
 <span id="cb1-90"><a href="#cb1-90" tabindex="-1"></a>      <span class="fu">cell_fill</span>(<span class="at">color =</span> <span class="st">&quot;#B7410E&quot;</span>),  <span class="co"># make tab headers stand out</span></span>
-<span id="cb1-91"><a href="#cb1-91" tabindex="-1"></a>      <span class="fu">cell_text</span>(<span class="at">color =</span> <span class="st">&quot;white&quot;</span>, <span class="at">weight =</span> <span class="st">&quot;bold&quot;</span>)      <span class="co"># Bold text for emphasis</span></span>
+<span id="cb1-91"><a href="#cb1-91" tabindex="-1"></a>      <span class="fu">cell_text</span>(<span class="at">color =</span> <span class="st">&quot;white&quot;</span>, <span class="at">weight =</span> <span class="st">&quot;bold&quot;</span>)      <span class="co"># Bold text for emphasis, white for clarity </span></span>
 <span id="cb1-92"><a href="#cb1-92" tabindex="-1"></a>    ),</span>
 <span id="cb1-93"><a href="#cb1-93" tabindex="-1"></a>    <span class="at">locations =</span> <span class="fu">cells_row_groups</span>(<span class="at">groups =</span> <span class="fu">everything</span>())<span class="co"># Apply to all year row groups</span></span>
 <span id="cb1-94"><a href="#cb1-94" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
 <span id="cb1-95"><a href="#cb1-95" tabindex="-1"></a>  <span class="co"># Compact table spacing</span></span>
 <span id="cb1-96"><a href="#cb1-96" tabindex="-1"></a>  <span class="fu">tab_options</span>(</span>
 <span id="cb1-97"><a href="#cb1-97" tabindex="-1"></a>    <span class="at">table.font.size =</span> <span class="st">&quot;small&quot;</span>,</span>
-<span id="cb1-98"><a href="#cb1-98" tabindex="-1"></a>    <span class="at">data_row.padding =</span> <span class="fu">px</span>(<span class="dv">5</span>)  <span class="co"># Adjust row padding</span></span>
+<span id="cb1-98"><a href="#cb1-98" tabindex="-1"></a>    <span class="at">data_row.padding =</span> <span class="fu">px</span>(<span class="dv">5</span>)  <span class="co"># Adjust row padding to decrease table size. </span></span>
 <span id="cb1-99"><a href="#cb1-99" tabindex="-1"></a>  ) </span>
 <span id="cb1-100"><a href="#cb1-100" tabindex="-1"></a></span>
 <span id="cb1-101"><a href="#cb1-101" tabindex="-1"></a>seasonal_summary_gt</span></code></pre></div>
-<div id="tpkmyensrt" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#tpkmyensrt table {
+<div id="qboytvdtlc" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#qboytvdtlc table {
 font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 -webkit-font-smoothing: antialiased;
 -moz-osx-font-smoothing: grayscale;
 }
-#tpkmyensrt thead, #tpkmyensrt tbody, #tpkmyensrt tfoot, #tpkmyensrt tr, #tpkmyensrt td, #tpkmyensrt th {
+#qboytvdtlc thead, #qboytvdtlc tbody, #qboytvdtlc tfoot, #qboytvdtlc tr, #qboytvdtlc td, #qboytvdtlc th {
 border-style: none;
 }
-#tpkmyensrt p {
+#qboytvdtlc p {
 margin: 0;
 padding: 0;
 }
-#tpkmyensrt .gt_table {
+#qboytvdtlc .gt_table {
 display: table;
 border-collapse: collapse;
 line-height: normal;
@@ -1725,11 +1724,11 @@ border-left-style: none;
 border-left-width: 2px;
 border-left-color: #D3D3D3;
 }
-#tpkmyensrt .gt_caption {
+#qboytvdtlc .gt_caption {
 padding-top: 4px;
 padding-bottom: 4px;
 }
-#tpkmyensrt .gt_title {
+#qboytvdtlc .gt_title {
 color: #333333;
 font-size: 125%;
 font-weight: initial;
@@ -1740,7 +1739,7 @@ padding-right: 5px;
 border-bottom-color: #FFFFFF;
 border-bottom-width: 0;
 }
-#tpkmyensrt .gt_subtitle {
+#qboytvdtlc .gt_subtitle {
 color: #333333;
 font-size: 85%;
 font-weight: initial;
@@ -1751,7 +1750,7 @@ padding-right: 5px;
 border-top-color: #FFFFFF;
 border-top-width: 0;
 }
-#tpkmyensrt .gt_heading {
+#qboytvdtlc .gt_heading {
 background-color: #FFFFFF;
 text-align: center;
 border-bottom-color: #FFFFFF;
@@ -1762,12 +1761,12 @@ border-right-style: none;
 border-right-width: 1px;
 border-right-color: #D3D3D3;
 }
-#tpkmyensrt .gt_bottom_border {
+#qboytvdtlc .gt_bottom_border {
 border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#tpkmyensrt .gt_col_headings {
+#qboytvdtlc .gt_col_headings {
 border-top-style: solid;
 border-top-width: 2px;
 border-top-color: #D3D3D3;
@@ -1781,7 +1780,7 @@ border-right-style: none;
 border-right-width: 1px;
 border-right-color: #D3D3D3;
 }
-#tpkmyensrt .gt_col_heading {
+#qboytvdtlc .gt_col_heading {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -1800,7 +1799,7 @@ padding-left: 5px;
 padding-right: 5px;
 overflow-x: hidden;
 }
-#tpkmyensrt .gt_column_spanner_outer {
+#qboytvdtlc .gt_column_spanner_outer {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -1811,13 +1810,13 @@ padding-bottom: 0;
 padding-left: 4px;
 padding-right: 4px;
 }
-#tpkmyensrt .gt_column_spanner_outer:first-child {
+#qboytvdtlc .gt_column_spanner_outer:first-child {
 padding-left: 0;
 }
-#tpkmyensrt .gt_column_spanner_outer:last-child {
+#qboytvdtlc .gt_column_spanner_outer:last-child {
 padding-right: 0;
 }
-#tpkmyensrt .gt_column_spanner {
+#qboytvdtlc .gt_column_spanner {
 border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
@@ -1828,10 +1827,10 @@ overflow-x: hidden;
 display: inline-block;
 width: 100%;
 }
-#tpkmyensrt .gt_spanner_row {
+#qboytvdtlc .gt_spanner_row {
 border-bottom-style: hidden;
 }
-#tpkmyensrt .gt_group_heading {
+#qboytvdtlc .gt_group_heading {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -1856,7 +1855,7 @@ border-right-color: #D3D3D3;
 vertical-align: middle;
 text-align: left;
 }
-#tpkmyensrt .gt_empty_group_heading {
+#qboytvdtlc .gt_empty_group_heading {
 padding: 0.5px;
 color: #333333;
 background-color: #FFFFFF;
@@ -1870,13 +1869,13 @@ border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 vertical-align: middle;
 }
-#tpkmyensrt .gt_from_md > :first-child {
+#qboytvdtlc .gt_from_md > :first-child {
 margin-top: 0;
 }
-#tpkmyensrt .gt_from_md > :last-child {
+#qboytvdtlc .gt_from_md > :last-child {
 margin-bottom: 0;
 }
-#tpkmyensrt .gt_row {
+#qboytvdtlc .gt_row {
 padding-top: 5px;
 padding-bottom: 5px;
 padding-left: 5px;
@@ -1894,7 +1893,7 @@ border-right-color: #D3D3D3;
 vertical-align: middle;
 overflow-x: hidden;
 }
-#tpkmyensrt .gt_stub {
+#qboytvdtlc .gt_stub {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -1906,7 +1905,7 @@ border-right-color: #D3D3D3;
 padding-left: 5px;
 padding-right: 5px;
 }
-#tpkmyensrt .gt_stub_row_group {
+#qboytvdtlc .gt_stub_row_group {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -1919,13 +1918,13 @@ padding-left: 5px;
 padding-right: 5px;
 vertical-align: top;
 }
-#tpkmyensrt .gt_row_group_first td {
+#qboytvdtlc .gt_row_group_first td {
 border-top-width: 2px;
 }
-#tpkmyensrt .gt_row_group_first th {
+#qboytvdtlc .gt_row_group_first th {
 border-top-width: 2px;
 }
-#tpkmyensrt .gt_summary_row {
+#qboytvdtlc .gt_summary_row {
 color: #333333;
 background-color: #FFFFFF;
 text-transform: inherit;
@@ -1934,14 +1933,14 @@ padding-bottom: 8px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#tpkmyensrt .gt_first_summary_row {
+#qboytvdtlc .gt_first_summary_row {
 border-top-style: solid;
 border-top-color: #D3D3D3;
 }
-#tpkmyensrt .gt_first_summary_row.thick {
+#qboytvdtlc .gt_first_summary_row.thick {
 border-top-width: 2px;
 }
-#tpkmyensrt .gt_last_summary_row {
+#qboytvdtlc .gt_last_summary_row {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -1950,7 +1949,7 @@ border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#tpkmyensrt .gt_grand_summary_row {
+#qboytvdtlc .gt_grand_summary_row {
 color: #333333;
 background-color: #FFFFFF;
 text-transform: inherit;
@@ -1959,7 +1958,7 @@ padding-bottom: 8px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#tpkmyensrt .gt_first_grand_summary_row {
+#qboytvdtlc .gt_first_grand_summary_row {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -1968,7 +1967,7 @@ border-top-style: double;
 border-top-width: 6px;
 border-top-color: #D3D3D3;
 }
-#tpkmyensrt .gt_last_grand_summary_row_top {
+#qboytvdtlc .gt_last_grand_summary_row_top {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -1977,10 +1976,10 @@ border-bottom-style: double;
 border-bottom-width: 6px;
 border-bottom-color: #D3D3D3;
 }
-#tpkmyensrt .gt_striped {
+#qboytvdtlc .gt_striped {
 background-color: rgba(128, 128, 128, 0.05);
 }
-#tpkmyensrt .gt_table_body {
+#qboytvdtlc .gt_table_body {
 border-top-style: solid;
 border-top-width: 2px;
 border-top-color: #D3D3D3;
@@ -1988,7 +1987,7 @@ border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#tpkmyensrt .gt_footnotes {
+#qboytvdtlc .gt_footnotes {
 color: #333333;
 background-color: #FFFFFF;
 border-bottom-style: none;
@@ -2001,7 +2000,7 @@ border-right-style: none;
 border-right-width: 2px;
 border-right-color: #D3D3D3;
 }
-#tpkmyensrt .gt_footnote {
+#qboytvdtlc .gt_footnote {
 margin: 0px;
 font-size: 90%;
 padding-top: 4px;
@@ -2009,7 +2008,7 @@ padding-bottom: 4px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#tpkmyensrt .gt_sourcenotes {
+#qboytvdtlc .gt_sourcenotes {
 color: #333333;
 background-color: #FFFFFF;
 border-bottom-style: none;
@@ -2022,64 +2021,64 @@ border-right-style: none;
 border-right-width: 2px;
 border-right-color: #D3D3D3;
 }
-#tpkmyensrt .gt_sourcenote {
+#qboytvdtlc .gt_sourcenote {
 font-size: 90%;
 padding-top: 4px;
 padding-bottom: 4px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#tpkmyensrt .gt_left {
+#qboytvdtlc .gt_left {
 text-align: left;
 }
-#tpkmyensrt .gt_center {
+#qboytvdtlc .gt_center {
 text-align: center;
 }
-#tpkmyensrt .gt_right {
+#qboytvdtlc .gt_right {
 text-align: right;
 font-variant-numeric: tabular-nums;
 }
-#tpkmyensrt .gt_font_normal {
+#qboytvdtlc .gt_font_normal {
 font-weight: normal;
 }
-#tpkmyensrt .gt_font_bold {
+#qboytvdtlc .gt_font_bold {
 font-weight: bold;
 }
-#tpkmyensrt .gt_font_italic {
+#qboytvdtlc .gt_font_italic {
 font-style: italic;
 }
-#tpkmyensrt .gt_super {
+#qboytvdtlc .gt_super {
 font-size: 65%;
 }
-#tpkmyensrt .gt_footnote_marks {
+#qboytvdtlc .gt_footnote_marks {
 font-size: 75%;
 vertical-align: 0.4em;
 position: initial;
 }
-#tpkmyensrt .gt_asterisk {
+#qboytvdtlc .gt_asterisk {
 font-size: 100%;
 vertical-align: 0;
 }
-#tpkmyensrt .gt_indent_1 {
+#qboytvdtlc .gt_indent_1 {
 text-indent: 5px;
 }
-#tpkmyensrt .gt_indent_2 {
+#qboytvdtlc .gt_indent_2 {
 text-indent: 10px;
 }
-#tpkmyensrt .gt_indent_3 {
+#qboytvdtlc .gt_indent_3 {
 text-indent: 15px;
 }
-#tpkmyensrt .gt_indent_4 {
+#qboytvdtlc .gt_indent_4 {
 text-indent: 20px;
 }
-#tpkmyensrt .gt_indent_5 {
+#qboytvdtlc .gt_indent_5 {
 text-indent: 25px;
 }
-#tpkmyensrt .katex-display {
+#qboytvdtlc .katex-display {
 display: inline-flex !important;
 margin-bottom: 0.75em !important;
 }
-#tpkmyensrt div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#qboytvdtlc div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
 height: 0px !important;
 }
 </style>
@@ -2157,6 +2156,9 @@ hours and SAD-related symptoms.</p>
 prescription rates to provide more context for these trends.</p>
 <p>-&gt; hoping 2 maps side by side one which shows total prescriptions
 and one which shows prescriptions per capita</p>
+<p>OR</p>
+<p>I will go on to assess and visualise which month has the highest
+prescriptions (before moving onto a map).</p>
 </div>
 </div>
 

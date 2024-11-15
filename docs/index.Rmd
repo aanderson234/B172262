@@ -80,8 +80,9 @@ return(cleaned_data)
 }
 ```
 
-Load and Combine Regional Data:
 ```{r, echo=FALSE}
+#Load and Combine Regional Data:
+
 #load sunshine data for regions 
 north <- load_sunshine_data("https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Sunshine/date/Scotland_N.txt",c(2022,2023)) 
 
