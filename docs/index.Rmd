@@ -369,7 +369,7 @@ max_2023 <- max(scotland_seasonal_summary$total_prescriptions[scotland_seasonal_
 ```
 
 ```{r, results='asis'}
-# Create the table
+# Create table
 seasonal_summary_gt <- scotland_seasonal_summary %>%
   gt(rowname_col = "season") %>%                      # Use Season as row labels
   # Group rows by year
@@ -386,7 +386,7 @@ seasonal_summary_gt <- scotland_seasonal_summary %>%
     title = md("**Seasonal Summary: Prescriptions and Sunshine Hours**"),
     subtitle = md("Tracking *SSRI^1^* Prescription Trends Alongside Sunshine Patterns in Scotland")  
   ) %>%
-  # Add footnote for SSRI
+  # Add footnote directly to 'SSRI'
   tab_footnote(
     footnote = "SSRI: Selective Serotonin Reuptake Inhibitors."
   ) %>%
@@ -394,15 +394,15 @@ seasonal_summary_gt <- scotland_seasonal_summary %>%
   tab_source_note(
     source_note = "Data sources: Sunshine hours from Meteorological Office; SSRI prescriptions from NHS Scotland."
   ) %>%
-  # Format the "Total Prescriptions" column with no decimals
+  # Format the "Total Prescriptions" column with no decimals for clarity
   fmt_number(
     columns = "total_prescriptions",
-    decimals = 0  # No decimals
+    decimals = 0
   ) %>%
-  # Format the "Avg. Sunshine Hours" column with 3 decimals
+  # Format the "Avg. Sunshine Hours" column with 2 decimals for precision 
   fmt_number(
     columns = "avg_sunshine_hours",
-    decimals = 2  # 2 decimals for precision
+    decimals = 2  
   ) %>%
   # Hide the "year" column
   cols_hide(
@@ -414,7 +414,7 @@ seasonal_summary_gt <- scotland_seasonal_summary %>%
     total_prescriptions = md("**Total Prescriptions**"),
     avg_sunshine_hours = md("**Avg. Sunshine Hours**")
   ) %>%
-  # Add a spanner with updated text
+  # Add a spanner
   tab_spanner(
     label = "Seasonal Metrics (2022-2023)",
     columns = c(total_prescriptions, avg_sunshine_hours)
@@ -459,14 +459,14 @@ seasonal_summary_gt <- scotland_seasonal_summary %>%
   tab_style(
     style = list(
       cell_fill(color = "#B7410E"),  # make tab headers stand out
-      cell_text(color = "white", weight = "bold")      # Bold text for emphasis
+      cell_text(color = "white", weight = "bold")      # Bold text for emphasis, white for clarity 
     ),
     locations = cells_row_groups(groups = everything())# Apply to all year row groups
   ) %>% 
   # Compact table spacing
   tab_options(
     table.font.size = "small",
-    data_row.padding = px(5)  # Adjust row padding
+    data_row.padding = px(5)  # Adjust row padding to decrease table size. 
   ) 
 
 seasonal_summary_gt
