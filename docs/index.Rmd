@@ -67,8 +67,7 @@ knitr::opts_chunk$set(
   warning = FALSE,   # Suppress warning messages in the output
   message = FALSE,   # Suppress informational messages
   results = 'hide',  # Hide raw text results by default
-  fig.align = "center" # Center-align figures
-)
+  fig.align = "center") # Center-align figures
 ```
 
 ### **MET Daylight Hours Data**  
@@ -99,8 +98,7 @@ cleaned_data <- data_lines %>%
       values_to = "Sunshine Hours")           # create column for sunshine hours 
 
 #return cleaned and reshaped data 
-return(cleaned_data)
-}
+return(cleaned_data)}
 ```
 **Load and Combine Regional Data:**  
 This block uses the `load_sunshine_data()` function to load and clean sunshine hours data for Scotland’s northern, eastern, and western regions. The datasets are combined into a single table with an added region label for further analysis.  
@@ -114,8 +112,7 @@ west <- load_sunshine_data("https://www.metoffice.gov.uk/pub/data/weather/uk/cli
 sunlight_data <- bind_rows(
   north %>% mutate(Region = "north"),
   east %>% mutate(Region = "east"),
-  west %>% mutate(Region = "west")
-  ) %>% 
+  west %>% mutate(Region = "west")) %>% 
   clean_names() # Standardize column names for consistency and easier use
 ``` 
 ### **Prescription Data**    
@@ -141,34 +138,28 @@ process_monthly_data <- function(resource_mapping, year, month) {
     resource_url <- resource_mapping %>%
         filter(year == !!year & month == !!month) %>%
         pull(resource_url)  # Extract the resource URL
-
-   # Use tryCatch to handle errors gracefully during data processing
+    # Use tryCatch to handle errors gracefully during data processing
     tryCatch({
         # Download and read the CSV data directly from the URL
         monthly_data <- read_csv(resource_url, show_col_types = FALSE)
-
         # Filter the data to include only SSRI prescriptions
         ssri_data <- monthly_data %>%
             filter(
                 str_detect(BNFItemCode, "^040303") |  # Match SSRI BNF codes
                 str_detect(BNFItemDescription,       # Match common SSRI drug names
-                    "citalopram|fluoxetine|sertraline|paroxetine|escitalopram")
-            ) %>%
+                    "citalopram|fluoxetine|sertraline|paroxetine|escitalopram")) %>%
             group_by(HBT) %>%  # Summarize the data by health board
             summarize(
-                TotalPaidItems = sum(NumberOfPaidItems, na.rm = TRUE),  # Aggregate total prescriptions
-                .groups = "drop"
-            ) %>%
+                TotalPaidItems = sum(NumberOfPaidItems, na.rm = TRUE), # Aggregate total prescriptions
+                .groups = "drop") %>%
             mutate(Year = year, Month = month)  # Add year and month for reference
-
         # Return the processed SSRI data
         return(ssri_data)
     }, error = function(e) {
         # Print an error message and return an empty tibble if an error occurs
         message(sprintf("Failed to process data for %04d-%02d: %s", year, month, e$message))
         return(tibble())  # Return an empty tibble on failure
-    })
-}
+    })}
 ```
 **Step 3: Batch Processing for all Months**  
 This block generates a grid of year-month combinations and uses the `process_monthly_data()` function to batch process all monthly datasets. The cleaned and combined data is saved for further analysis.   
@@ -238,7 +229,6 @@ population_data <- read_csv(here("data", "population_data.csv")) %>%
   select(year, hb, all_ages) %>%  # Retain only necessary columns
   rename(population = all_ages)  # Rename column for clarity
 ```
-
 This block reads and cleans the NHS Health Board spatial data to enable mapping. It assigns regions (north, east, west) to each health board and prepares the data for merging with prescription datasets.  
 ```{r, metrics per capita}
 # Merge population data with prescription data
@@ -304,7 +294,6 @@ max_prescriptions <- scotland_seasonal_summary %>%
     max_prescriptions = max(total_prescriptions, na.rm = TRUE)  # Compute maximum seasonal prescriptions per year
   )
 ```
-
 This figure summarizes the total SSRI prescriptions and average sunshine hours for each season in 2022 and 2023. It highlights key metrics, including the maximum prescriptions for each year and the lowest sunshine hours, to identify seasonal trends in mental health treatment.  
 ```{r summary-table , results='asis', fig.width=5, fig.height=6, fig.cap="Summary Table"}
 # Create a formatted table summarizing seasonal data for prescriptions and sunshine hours
@@ -369,8 +358,7 @@ seasonal_summary_gt <- scotland_seasonal_summary %>%
 # Display the formatted table
 seasonal_summary_gt
 ```
-**Figure 1 Analysis**
-
+**Figure 1 Analysis**  
 The seasonal summary table reveals distinct temporal trends in SSRI prescriptions. While **sunshine hours follow predictable seasonal patterns** (lowest in winter, highest in summer), **prescription rates peak in Spring 2023**, likely reflecting a **lag effect** of winter light deprivation (Eagles *et al.*, 1998; Lansdall-Welfare *et al.*, 2019).  
 Conversely, winter prescriptions are **lower than expected**, challenging the assumption that winter is the primary SAD treatment period. The spring peak suggests that symptoms persist beyond winter, leading to delayed treatment-seeking behavior.  
 To better understand these trends, a deeper examination of **monthly patterns** is necessary, as shown in **Figure 2**.  
@@ -381,8 +369,7 @@ This plot visualizes the monthly SSRI prescription trends in Scotland for 2022 a
 # Add a hover text column for better tooltips in the interactive plot
 # This text will display detailed information when hovering over points in the plot
 scotland_summary <- scotland_summary %>%
-  mutate(
-    hover_text = paste(
+  mutate(hover_text = paste(
       "Month:", month, "<br>",                     # Display the month
       "Year:", year, "<br>",                      # Display the year
       "Total Prescriptions:",                    # Display the total prescriptions in x10^5 format
@@ -413,12 +400,10 @@ p <- ggplot(scotland_summary, aes(
 # Convert the ggplot object to an interactive plot with tooltips
 # The "tooltip" parameter specifies that the hover text should use the "text" aesthetic
 interactive_plot <- ggplotly(p, session = "knitr", tooltip = "text")
-
 # Display the interactive plot
 interactive_plot
 ```
-**Figure 2 Analysis**
-
+**Figure 2 Analysis**  
 Figure 2 highlights monthly variations in SSRI prescriptions, with peaks in **March**, **August**, and **November**:  
 - **March Peak**: A **5.94% increase** in prescriptions compared to the yearly average (2023) reflects the **lingering effects of winter’s reduced light exposure**.  
 - **August Spike**: This unexpected peak may be driven by **non-seasonal societal stressors**, such as back-to-school anxiety and post-holiday adjustments (Jack *et al.*, 2023).  
@@ -446,10 +431,6 @@ average_2023 <- mean(data_2023$total_prescriptions, na.rm = TRUE)  # Handle any 
 # Calculate the percentage increase for March compared to the yearly average
 # Formula: ((March value - average value) / average value) * 100
 percentage_increase <- ((march_2023 - average_2023) / average_2023) * 100
-
-# Print the result
-# Display the calculated percentage increase with two decimal places
-cat(sprintf("The percentage increase for March 2023 compared to the yearly average is %.2f%%.", percentage_increase))
 ```
 <details>
 
@@ -586,10 +567,8 @@ combined_maps <- plot_grid(
 # Display the combined map layout
 combined_maps
 ```
-**Figure 3 Analysis**
-
+**Figure 3 Analysis**  
 The maps in Figure 3 reveal significant regional trends in sunlight exposure and SSRI prescriptions:  
-
 - **Map A: Average Sunlight Hours**: Northern regions (e.g., Orkney, Shetland, and the Western Isles) report **lower sunlight exposure**, reflecting their latitude. This likely exacerbates SAD symptoms (Lansdall-Welfare *et al.*, 2019).  
 - **Map B: Total Prescriptions**: Urban centers like Greater Glasgow and Clyde exhibit the **highest total prescription volumes**, reflecting their larger populations and access to healthcare infrastructure.  
 - **Map C: Per-Capita Prescriptions**: High per-capita prescription rates in rural northern areas underscore the **compounded challenges of low sunlight exposure and limited mental health resources**.  
@@ -601,31 +580,22 @@ These findings highlight the need for **targeted mental health strategies**, par
 ## Synthesis of Key Findings  
 
 **Temporal Trends**    
-
 As shown in **Figure 2**, monthly SSRI prescriptions reveal distinct peaks in **March**, **August**, and **November**:
+- **Spring Lag Effect (March)**: The peak in March supports the hypothesis of a **delayed psychological response** to winter's reduced sunlight. Research suggests that sunlight deprivation effects can linger for months, with individuals often seeking treatment later in the season (Eagles *et al.*, 1998; Lansdall-Welfare *et al.*, 2019).  
+- **Unexpected August Spike**: Contrary to seasonal expectations, the August peak may reflect **non-seasonal societal stressors**, such as back-to-school anxiety and post-holiday transitions (Jack *et al.*, 2023).  
+- **Winter Preparatory Prescriptions (November)**: The increase in November aligns with the **onset of shorter days** and the return to GMT, which are known triggers for SAD symptoms.  
+Notably, the **March peak** challenges traditional assumptions that winter is the primary treatment period for SAD, suggesting **extended seasonal effects** and potential delays in symptom recognition or treatment-seeking behavior.  
 
-- **Spring Lag Effect (March)**: The peak in March supports the hypothesis of a **delayed psychological response** to winter's reduced sunlight. Research suggests that sunlight deprivation effects can linger for months, with individuals often seeking treatment later in the season (Eagles et al., 1998; Lansdall-Welfare et al., 2019).
-- **Unexpected August Spike**: Contrary to seasonal expectations, the August peak may reflect **non-seasonal societal stressors**, such as back-to-school anxiety and post-holiday transitions (Jack et al., 2023).
-- **Winter Preparatory Prescriptions (November)**: The increase in November aligns with the **onset of shorter days** and the return to GMT, which are known triggers for SAD symptoms.
-
-Notably, the **March peak** challenges traditional assumptions that winter is the primary treatment period for SAD, suggesting **extended seasonal effects** and potential delays in symptom recognition or treatment-seeking behavior.
-
-**Regional Variability**  
-
-The geographical patterns in **Figure 3** highlight disparities in sunlight exposure and prescription trends:
-
-- **High Per-Capita Prescriptions in Northern Regions**: Areas like Orkney, Shetland, and the Western Isles report disproportionately high per-capita prescriptions due to **extreme seasonal light fluctuations** and **limited access to alternative treatments**.
-- **Urban vs. Rural Dynamics**: While urban centers such as Greater Glasgow and Clyde show higher total prescriptions, these regions report lower per-capita rates, reflecting the availability of **diverse mental health resources** beyond medication.
-
-These findings underscore the need for **region-specific interventions**, particularly in high-risk northern and rural areas.
+**Regional Variability**   
+The geographical patterns in **Figure 3** highlight disparities in sunlight exposure and prescription trends:  
+- **High Per-Capita Prescriptions in Northern Regions**: Areas like Orkney, Shetland, and the Western Isles report disproportionately high per-capita prescriptions due to **extreme seasonal light fluctuations** and **limited access to alternative treatments**.  
+- **Urban vs. Rural Dynamics**: While urban centers such as Greater Glasgow and Clyde show higher total prescriptions, these regions report lower per-capita rates, reflecting the availability of **diverse mental health resources** beyond medication.  
+These findings underscore the need for **region-specific interventions**, particularly in high-risk northern and rural areas.  
 
 **Relationship Between Prescriptions and Seasonal Patterns**  
-
-As illustrated in **Figure 1**, SSRI prescriptions deviate from sunshine hours, which follow predictable seasonal patterns. While sunshine hours peak in summer and dip in winter:
-
-- Prescriptions peak in **March** and **November**, coinciding with **transitional periods** in daylight.  
-- The **summer anomaly** in August highlights the role of **non-seasonal drivers**, including societal stressors.
-
+As illustrated in **Figure 1**, SSRI prescriptions deviate from sunshine hours, which follow predictable seasonal patterns. While sunshine hours peak in summer and dip in winter:  
+- Prescriptions peak in **March** and **November**, coinciding with **transitional periods** in daylight.   
+- The **summer anomaly** in August highlights the role of **non-seasonal drivers**, including societal stressors.  
 This **decoupling of sunlight and prescription trends** suggests that **SAD-related treatment-seeking behavior** is influenced by a combination of environmental and societal factors.
 
 ## Limitations and Future Directions  
@@ -639,15 +609,11 @@ This **decoupling of sunlight and prescription trends** suggests that **SAD-rela
 To address these limitations, future studies should:
 - **Incorporate Diagnostic Data**: Linking SSRI prescriptions to SAD diagnoses could provide clearer insights into treatment patterns.  
 - **Explore Non-Seasonal Drivers**: Investigate societal stressors, like economic pressures or healthcare access, which may contribute to unexpected trends like the August spike.  
-- **Examine Alternative Treatments**: Assess the effectiveness of light therapy or counseling services and their availability in high-risk regions.
-
----
+- **Examine Alternative Treatments**: Assess the effectiveness of light therapy or counseling services and their availability in high-risk regions.  
 
 <div style="background-color: #FFDFBF; padding: 10px; border-left: 4px solid #FF6633;">
 💡 **Policy Implication**: Increasing access to light therapy in northern and rural areas could mitigate the over-reliance on SSRIs, particularly during peak seasons.
 </div>
-
----
 
 # Conclusion  
 
@@ -659,8 +625,6 @@ This analysis highlights significant temporal and regional variability in SSRI p
 These findings challenge traditional assumptions about SAD-related treatment and underscore the need for **regionally tailored interventions**. Expanding access to light therapy and promoting awareness campaigns during **late winter and early spring** could improve the management of seasonal mood disorders, reducing their burden on public health.
 
 > 🌍 **Broader Impact**: By addressing these disparities, policymakers can improve mental health outcomes across diverse populations, ensuring equitable access to treatment for those most affected by seasonal mood disorders.
-
-
 
 # References 
 
