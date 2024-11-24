@@ -1,77 +1,100 @@
 ---
 title: "Seasonal Affective Disorder: A Data Analysis"
 author: "Alex Anderson"
-date: "06/11/2024"
+date: "`r Sys.Date()`"
 output:
-   html_document:
+   bookdown::html_document2:
+    css: custom.css
     toc: true            
     toc_float: true      
-    theme: cerulean     
-    highlight: tango     
+    theme: cosmo
+    highlight: pygments   
 ---
-# Introduction 
-Seasonal Affective Disorder (SAD) is a mood disorder characterised by recurring episodes of depression that occur at specific times of the year, typically in autumn and winter. Seasonal variations in sunshine exposure are thought to be connected to SAD, impacting patients' mental and physical health.
+# Introduction  
+Seasonal Affective Disorder (SAD) is a mood disorder characterized by recurring episodes of depression that occur at specific times of the year, typically in autumn and winter. Seasonal variations in sunshine exposure are thought to be connected to SAD, impacting patients' mental and physical health (Jack *et al.*, 2023).  
+In Scotland, daylight hours fluctuate significantly throughout the year. SAD has been shown to affect **9.3% of primary care patients** in northeast Scotland during winter, with an additional **15.6% experiencing subsyndromal symptoms** (Eagles *et al.*, 1998). Therefore, understanding the relationship between SAD and prescription trends of antidepressants is of public health interest.  
+This analysis focuses on one type of antidepressant, Selective Serotonin Re-uptake Inhibitors (SSRIs), which account for over **50% of all antidepressants prescribed in Scotland** (NHS; Godman *et al.*, 2019). The National Institute for Health and Care Excellence (NICE) recommends treating SAD similarly to other types of depression, including the use of antidepressants like SSRIs (NICE).  
 
-In Scotland, daylight hours fluctuate significantly throughout the year. Therefore, understanding the relationship between SAD and prescription trends of antidepressants is of public health interest. This analysis will focus on one type of antidepressant, called Selective Serotonin Re-uptake Inhibitors (SSRIs), commonly prescribed for this condition (NHS reference). 
+# Methods  
+This report will use SSRI prescription patterns across 2022–2023, a period chosen to reflect post-COVID-19 conditions, during which antidepressant prescriptions may have been influenced not only by seasonal but also year-round factors, as SAD patients have been shown to consult frequently throughout the year (Eagles *et al.*, 1998).    
+By exploring the potential correlation between SSRI prescription trends and regional sunshine hours, this analysis aims to shed light on the temporal and geographical factors influencing SAD-related prescriptions. These findings are intended to provide insights into the seasonal dynamics of mental health care in Scotland.  
+ 
+<div style="background-color: #FFDFBF; padding: 10px; border-left: 4px solid #FF6633;">
 
-This report will use SSRI prescription patterns across 2022-2023, a period chosen to reflect post-COVID-19 conditions, during which antidepressant prescriptions were likely influenced by both seasonal and pandemic-related factors. By exploring the potential correlation between SSRI prescription trends and regional sunshine hours, this analysis aims to shed light on the temporal and geographical factors influencing SAD-related prescriptions. These findings are intended to provide insights into the seasonal dynamics of mental health care in Scotland.  
+### 🔍 **Data Sources**
+The following datasets were used for this analysis:
 
-```{r, echo=FALSE}
-# Methods
-## Data Sources
-# The following datasets were used:
-# - NHS Scotland prescription data ([link](https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community))
-# - Sunshine hours data from the MET Office ([link](https://www.metoffice.gov.uk/)).
+1. **NHS Scotland Prescription Data**  
+   - Source: [NHS Scotland Open Data Platform](https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community)
+   - Provides monthly prescription trends across health boards in Scotland, specifically focusing on SSRIs.
+
+2. **Sunshine Hours Data**  
+   - Source: [MET Office](https://www.metoffice.gov.uk/)
+   - Includes monthly sunshine hours across Scotland's northern, eastern, and western regions for 2022–2023.
+
+3. **NHS Health Board Shapefiles**  
+   - Source: [UK Government Open Geography Portal](https://geoportal.statistics.gov.uk/)
+   - Offers geographic boundaries for health boards, enabling spatial analysis of prescription trends.
+
+4. **Scotland Population Data**  
+   - Source: [National Records of Scotland](https://www.nrscotland.gov.uk/statistics-and-data)
+   - Contains population estimates for health boards, used to calculate per-capita prescription rates.
+
+</div>
 
 ## Data Preparation
-### Set-up Environment
-```
-
-```{r setup, warning=FALSE, message=FALSE, echo=FALSE}
+**Set-up Environment**  
+To start the analysis, the required libraries are loaded. These libraries include tools for data manipulation (`tidyverse`), file handling (`readr`), and visualization (`ggplot2`), among others:  
+```{r setup, warning=FALSE, message=FALSE}
 # load libraries 
-library(readr)
-library(tidyverse)
-library(janitor)
-library(dplyr)
-library(here)
-library(forcats)
-library(gt)
-library(knitr)
+library(readr)       # Reading and writing data files
+library(knitr)       # Dynamic report generation
+library(tidyverse)   # Data manipulation and visualization
+library(janitor)     # Data cleaning and formatting
+library(dplyr)       # Data wrangling
+library(here)        # File path management
+library(forcats)     # Working with categorical variables
+library(gt)          # Creating tables for reporting
+library(sf)          # Handling spatial data
+library(ggplot2)     # Data visualization
+library(plotly)      # Interactive plots
+library(cowplot)     # Combining plots into layouts
+library(bookdown)    # Generating book-like reports
 
-#set global chunk options 
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, results = 'hide')
+# Set global chunk options for consistent output in the report
+knitr::opts_chunk$set(
+  echo = TRUE,       # Display code alongside its output
+  warning = FALSE,   # Suppress warning messages in the output
+  message = FALSE,   # Suppress informational messages
+  results = 'hide',  # Hide raw text results by default
+  fig.align = "center" # Center-align figures
+)
 ```
 
-```{r, echo=FALSE}
-### Import and Clean MET Daylight Hours Data  
-# To analyze the relationship between sunshine hours and SSRI prescriptions, I obtained sunshine data for Scotland (North, East, and West regions) from the MET Office for 2022-2023. The datasets required cleaning to:  
-#     1. Skip metadata rows and manually set column names.  
-#     2. Filter for the required years and convert values to numeric.  
-#     3. Restructure the data into long format for easier merging with prescription data.  
-# The load_sunshine_data() function automates this process for each region, ensuring reproducibility and efficiency.  
-# 
-# Function for Loading and Cleaning Sunshine Data: 
-```
-
-```{r import MET data, echo=FALSE}
+### **MET Daylight Hours Data**  
+Function for Loading and Cleaning Sunshine Data:  
+The following function, `load_sunshine_data()`, is used to load and clean sunshine hours data from the MET Office. The function automates the extraction of relevant years and reshapes the data for analysis. It takes two arguments:  
+1. `url`: The URL of the MET data file.  
+2. `years`: A vector of years to filter the data.   
+```{r import MET data}
 load_sunshine_data <- function(url, years) {
 raw_data <- read_lines(url)                    # Read the file as lines of text
 data_lines <- raw_data[8:length(raw_data)] %>% # read raw data&start from 8th row (skip title)
-  str_split_fixed("\\s+", 18) %>%              #split by white-space, creating 18 columns
-  as_tibble()                                  #convert to a tibble 
+  str_split_fixed("\\s+", 18) %>%              #split by white-space into 18 fixed width columns
+  as_tibble()                                  #convert to a tibble for easier handling
 
-# Assign meaningful column names. 
+# Assign meaningful column names for readability  
 colnames(data_lines) <- c("Year", month.abb, "Winter", "Spring", "Summer", "Autumn", "Annual")
 
-# Clean and filter data. 
+# Clean and filter data for analysis 
 cleaned_data <- data_lines %>%
- mutate(across(everything(),as.numeric)) %>%  # convert all columns to numeric 
+ mutate(across(everything(),as.numeric)) %>% # convert all columns to numeric type for calculations
   filter(Year %in% years) %>%                 # only keep rows for specified years
-  select(Year, Jan:Dec) %>%                   # exclude seasonal aggregates 
+  select(Year, Jan:Dec) %>%                   # exclude seasonal aggregate columns (e.g. annual)
 
 # pivot to long format for easier merging and analysis
    pivot_longer(
-      cols = Jan:Dec,                         # reshape monthly columns 
+      cols = Jan:Dec,                         # reshape monthly columns into rows 
       names_to = "Month",                     # create new column for month names 
       values_to = "Sunshine Hours")           # create column for sunshine hours 
 
@@ -79,15 +102,12 @@ cleaned_data <- data_lines %>%
 return(cleaned_data)
 }
 ```
-
-```{r, echo=FALSE}
-#Load and Combine Regional Data:
-
-#load sunshine data for regions 
+**Load and Combine Regional Data:**  
+This block uses the `load_sunshine_data()` function to load and clean sunshine hours data for Scotland’s northern, eastern, and western regions. The datasets are combined into a single table with an added region label for further analysis.  
+```{r}
+#load sunshine data for region (north, west and east), for 2022 and 2023
 north <- load_sunshine_data("https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Sunshine/date/Scotland_N.txt",c(2022,2023)) 
-
 east <- load_sunshine_data("https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Sunshine/date/Scotland_E.txt",c(2022,2023))
-
 west <- load_sunshine_data("https://www.metoffice.gov.uk/pub/data/weather/uk/climate/datasets/Sunshine/date/Scotland_W.txt",c(2022,2023))
 
 #Combine datasets and add region labels  
@@ -96,392 +116,618 @@ sunlight_data <- bind_rows(
   east %>% mutate(Region = "east"),
   west %>% mutate(Region = "west")
   ) %>% 
-  clean_names()                            #Standardize column names 
-
-# View final data set 
-head(sunlight_data)
+  clean_names() # Standardize column names for consistency and easier use
 ``` 
-
-```{r, echo=FALSE}
-### Import Prescription Data  
-# 
-# To analyze SSRI prescription trends across 2022-2023, I needed to process 24 large monthly datasets. Downloading and cleaning these files manually would be inefficient and error-prone. Instead, I automated the workflow by:  
-# 
-#     1. Creating a resource_mapping.csv file to store URLs for each month's dataset.  
-#     2. Developing a function (process_monthly_data) to download, filter, and summarize the data programmatically. This function identifies SSRIs using British National Formulary (BNF) codes and drug names, then aggregates prescriptions by health board.  
-#     3. Batch processing all datasets using a grid of year-month combinations.  
-#     
-# To ensure accuracy, I validated the processed data by checking for missing values, verifying URLs, and confirming the integrity of parsing operations. The final cleaned dataset is saved as processed_prescriptions.csv for reuse in further analysis. 
-# 
-# Step 1: Resource Mapping  
-# ```{r import prescription data, echo=FALSE}
-# resource_mapping <- read_csv(here("data", "resource_mapping.csv"))
-```
-
-
-```{r monthly function, echo=FALSE}
-#Step 2: Function to Process Montly Data  
-# process_monthly_data <- function(resource_mapping, year, month) {
-#     resource_url <- resource_mapping %>%
-#     filter(year == !!year & month == !!month) %>%
-#     pull(resource_url)              # Retrieve the resource URL for the given year and month
-#   
-#   print(paste("Processing:", resource_url))  # Debugging output
-#   
-#   tryCatch({
-#     # Read the CSV directly from the URL
-#     monthly_data <- read_csv(resource_url, show_col_types = FALSE)
-#     # Filter for SSRIs
-#     ssri_data <- monthly_data %>%
-#       filter(
-#         str_detect(BNFItemCode, "^040303") | 
-#           str_detect(BNFItemDescription,
-# "citalopram|fluoxetine|sertraline|paroxetine|escitalopram")  #I filtered by BNF code and the drug name to try and ensure no SSRIs were missing due to typos.                     
-#       )
-#     # Summarize the data by healthboard 
-#     summarized_data <- ssri_data %>%
-#       group_by(HBT) %>%
-#       summarize(
-#         TotalPaidItems = sum(NumberOfPaidItems, na.rm = TRUE),
-#         .groups = "drop"
-#       ) %>%
-#       mutate(Year = year, Month = month) # add year and month for tracking 
-#     
-#     return(summarized_data)
-#   }, error = function(e) {
-#     message(sprintf("Failed to process data for %04d-%02d: %s", year, month, e$message))
-#     return(tibble()) #  return an empty tibble if an error occurs 
-#   })
-# }
-```
-
-```{r test function, echo=FALSE}
-# (Testing the function)
-# test_data <- process_monthly_data(resource_mapping, 2022, 1)
-# print(test_data)
-```
-
+### **Prescription Data**    
  
-```{r import all months, echo=FALSE}
-#Step 3: Batch Processing for all Months 
-# Step 3:  
-# # Define years and months 
-# years <- 2022:2023
-# months <- 1:12
-# 
-# # Generate a grid of year and month combinations
-# year_month_grid <- expand_grid(year = years, month = months)
-# 
-# # Process all months and combine the results
-# all_prescription_data <- year_month_grid %>%
-#   mutate(data = map2(year, month, ~ process_monthly_data(resource_mapping, .x, .y))) %>%
-#   unnest(data)
+To analyze SSRI prescription trends across 2022-2023, I needed to process 24 large monthly datasets. Downloading and cleaning these files manually would be inefficient and error-prone. Instead, I automated the workflow by:  
+
+**Step 1: Resource Mapping**   
+This block imports a CSV file (`resource_mapping.csv`) containing the URLs of monthly SSRI prescription datasets. This mapping ensures efficient and reproducible access to data sources for batch processing.  
+```{r import prescription data}
+# Import a CSV file mapping resource URLs to their respective prescription data
+# This file provides the links to download monthly prescription datasets
+resource_mapping <- read_csv(here("data", "resource_mapping.csv"))
+```
+**Step 2: Function to Process Monthly Data**  
+This function processes monthly prescription data by downloading it from a specified URL, filtering for SSRIs, and summarizing the total prescriptions by health board. It also handles errors to ensure robustness during batch processing.  
+```{r monthly function}
+# Function to process monthly prescription data
+# This function retrieves a CSV file for a specific year and month, filters the data for SSRIs,
+# aggregates prescription counts by health board, and returns the summarized data.
+
+process_monthly_data <- function(resource_mapping, year, month) {
+    # Retrieve the URL for the specified year and month from the resource mapping
+    resource_url <- resource_mapping %>%
+        filter(year == !!year & month == !!month) %>%
+        pull(resource_url)  # Extract the resource URL
+
+   # Use tryCatch to handle errors gracefully during data processing
+    tryCatch({
+        # Download and read the CSV data directly from the URL
+        monthly_data <- read_csv(resource_url, show_col_types = FALSE)
+
+        # Filter the data to include only SSRI prescriptions
+        ssri_data <- monthly_data %>%
+            filter(
+                str_detect(BNFItemCode, "^040303") |  # Match SSRI BNF codes
+                str_detect(BNFItemDescription,       # Match common SSRI drug names
+                    "citalopram|fluoxetine|sertraline|paroxetine|escitalopram")
+            ) %>%
+            group_by(HBT) %>%  # Summarize the data by health board
+            summarize(
+                TotalPaidItems = sum(NumberOfPaidItems, na.rm = TRUE),  # Aggregate total prescriptions
+                .groups = "drop"
+            ) %>%
+            mutate(Year = year, Month = month)  # Add year and month for reference
+
+        # Return the processed SSRI data
+        return(ssri_data)
+    }, error = function(e) {
+        # Print an error message and return an empty tibble if an error occurs
+        message(sprintf("Failed to process data for %04d-%02d: %s", year, month, e$message))
+        return(tibble())  # Return an empty tibble on failure
+    })
+}
+```
+**Step 3: Batch Processing for all Months**  
+This block generates a grid of year-month combinations and uses the `process_monthly_data()` function to batch process all monthly datasets. The cleaned and combined data is saved for further analysis.   
+```{r import all months}
+# # Generate a grid of year-month combinations for batch processing
+# # This grid ensures that data for all specified months and years can be processed systematically.
+years <- 2022:2023  # Define the range of years for data processing
+months <- 1:12      # Define the months (1-12) to include in the grid
+year_month_grid <- expand_grid(year = years, month = months)  # Create all possible year-month combinations
+
+# Process all datasets and combine the results into one table
+# This block applies the `process_monthly_data()` function to each year-month combination
+# and collects the processed data into a single dataset.
+all_prescription_data <- year_month_grid %>%
+  mutate(data = map2(year, month, ~ process_monthly_data(resource_mapping, .x, .y))) %>%  # Apply function for each combination
+  unnest(data)  # Combine all processed monthly datasets into one unified dataset
 ```
 
-```{r troubleshoot, echo=FALSE}
-# 
-# Validation:  
-# The processed data was validated to ensure accuracy:  
-# - Parsing: No parsing issues were identified.  
-# - Missing Data: All rows contained complete prescription counts.  
-# - URL Verification: All resource URLs were valid and accessible.  
+**Validation**  
+To ensure accuracy, I validated the processed data by checking for missing values, verifying URLs, and confirming the integrity of parsing operations. The final cleaned dataset is saved as processed_prescriptions.csv for reuse in further analysis.  
+  
+    - Parsing: No parsing issues were identified.  
+    - Missing Data: All rows contained complete prescription counts.  
+    - URL Verification: All resource URLs were valid and accessible. 
+    
+**Final Cleaning and Saving**
+```{r, final cleaning of prescription data}
+# # Standardize month names and clean up columns for merging with other datasets
+# # This ensures that the month names are consistent and unnecessary columns are removed.
+all_prescription_data <- all_prescription_data %>%
+  mutate(month = month.abb[Month]) %>%  # Convert numeric month values to abbreviated names
+  select(-Year)  # Remove the Year column if it's no longer required
 
-# # Identify parsing issues
-# problems <- problems(all_prescription_data)
-# View(problems)
-# #produced an empty table indicating no parsing problems occurred whilst reading in the csv files
-# 
-# # Filter rows with missing or empty data
-# all_prescription_data %>% filter(is.na(TotalPaidItems))
-# # the tibble returned has zero rows, meaning no rows are missing or failed to process 
-# 
-# #check for missing data 
-# summary(all_prescription_data)
-# #indicates that the data is complete and looks correct, with meaningful values in TotalPaidItems
-# 
-# #url verification
-# unique(resource_mapping$resource_url)
-# #all URLs in resource_mapping appear to be valid, suggesting no connectivity issues.
-```
-
-
-```{r final cleanign of prescription data, echo=FALSE}
-#Final Cleaning and Saving
-# # standardise month names for future merging and remove extra columns 
-# all_prescription_data <- all_prescription_data %>%
-#   mutate(month = month.abb[Month]) %>% 
-#   select(-Year)  
-# 
-# # Save the final dataset for reuse
-# write_csv(all_prescription_data, "data/processed_prescriptions.csv")
+# # Save the cleaned dataset as a CSV file for reuse in future analysis
+# # Storing the processed data prevents the need to reprocess raw data repeatedly.
+write_csv(all_prescription_data, "data/processed_prescriptions.csv")
 
 # Load the saved dataset for further analysis
-all_prescription_data <- read_csv(here("data", "processed_prescriptions.csv"))
+# This reads in the previously saved processed data for continued analysis in the pipeline.
+all_prescription_data <- read_csv(here("data/processed_prescriptions.csv")) %>% 
+  clean_names()  # Standardize column names for easier handling
 ```
+## Wrangling Data  
+This block reads and cleans the NHS Health Board spatial data to enable mapping. It assigns regions (north, east, west) to each health board and prepares the data for merging with prescription datasets.  
+```{r create final dataset}
+# Read and clean NHS Health Board spatial data
+# This shapefile contains geographic boundaries and metadata for NHS Health Boards in Scotland.
+NHS_healthboards <- st_read(here("data", "NHS_HealthBoards_2019.shp")) %>% 
+  clean_names()  # Standardize column names for easier handling
 
-```{r merge prescription with hb, echo=FALSE}
-## Wrangling Data 
-#Merge with Health Board Names Data
+# Assign regions to Health Boards based on their geographic location
+# This step categorizes health boards into "north", "west", and "east" regions for analysis.
+region_ssri_prescriptions <- all_prescription_data %>%
+  left_join(NHS_healthboards, by = c("hbt" = "hb_code")) %>%  # Merge prescription data with spatial data
+  mutate(region = case_when(  # Assign regions based on health board names
+    hb_name %in% c("Highland", "Grampian", "Orkney", "Shetland", "Western Isles") ~ "north", 
+    hb_name %in% c("Greater Glasgow and Clyde", "Ayrshire and Arran", "Lanarkshire", "Dumfries and Galloway") ~ "west", 
+    hb_name %in% c("Lothian", "Fife", "Tayside", "Forth Valley", "Borders") ~ "east"
+  )) %>%
+  select(year, month, hbt, hb_name, region, total_paid_items)  # Retain only relevant columns for analysis
 
-#read in hb names
-hb_names <- read_csv(here("data","HB_names_Scotland.csv")) %>% 
-  clean_names()
-
-#select only hb and hbname columnms 
-hb_names_only <- hb_names %>% 
-  select(hb, hb_name)
-
-#merge hb names with my data 
-hb_ssri_prescription_data <- all_prescription_data %>% 
-  left_join(hb_names_only, by = c("HBT" = "hb"))
-
-# Check the result
-summary(hb_ssri_prescription_data)
-head(hb_ssri_prescription_data)
-
-# Look for rows with missing HBName
-filter(hb_ssri_prescription_data, is.na(hb_name))
-```
-
-```{r assign regions, echo=FALSE}
-#assigning regions
-region_ssri_prescriptions <- hb_ssri_prescription_data %>% 
-  mutate(region = case_when(
-    hb_name %in% c("NHS Highland", "NHS Grampian","NHS Orkney","NHS Shetland", "NHS Western Isles") ~ "north", 
-    hb_name %in% c("NHS Greater Glasgow and Clyde", "NHS Ayrshire and Arran", "NHS Lanarkshire", "NHS Dumfries and Galloway") ~ "west", 
-    hb_name %in% c("NHS Lothian", "NHS Fife", "NHS Tayside", "NHS Forth Valley", "NHS Borders") ~ "east"
-  ))
-```
-
-```{r reorder table, echo=FALSE}
-#rearrange
-region_ssri_prescriptions <- region_ssri_prescriptions %>% 
-  select(year, month, region, hb_name, TotalPaidItems) %>% 
-#cleaning the table 
-  clean_names()
-```
-
-  
-```{r population data, echo=FALSE}
-### Import and Clean Population Data  
-
-#import population
+# Import and clean population data for health boards
+# Population data is filtered for relevant years and used to calculate per-capita metrics.
 population_data <- read_csv(here("data", "population_data.csv")) %>% 
-  clean_names() #standardize names 
-
-#filter population to what i need
-filtered_population <- population_data %>% 
-  select(year, hb, sex, all_ages) %>% 
-  filter(year %in% c(2022, 2023), #filter for required years
-         sex == "All",            # include only total population
-         hb != "S92000003")       # exclude Scotland-wide summary
-
-#merge with health board names 
-hb_population <- filtered_population %>% 
-  left_join(hb_names_only, by = "hb") 
-
-# Check for unmatched rows in the merge
-anti_join(filtered_population, hb_names_only, by = "hb")
-#output displays there were no unmatched rows so my merge was successful. 
-
-#rearrange for clarity and remove hb and sex as no need for these columns. 
-hb_population <- hb_population %>% 
-  select(year, hb_name, population = all_ages) # rename all_ages 
+  clean_names() %>%  # Standardize column names
+  filter(year %in% c(2022, 2023), sex == "All", hb != "S92000003") %>%  # Filter for all genders and exclude total Scotland code
+  select(year, hb, all_ages) %>%  # Retain only necessary columns
+  rename(population = all_ages)  # Rename column for clarity
 ```
 
-```{r merge prese + pop, echo=FALSE}
-### Merge Prescriptions and Population Data 
+This block reads and cleans the NHS Health Board spatial data to enable mapping. It assigns regions (north, east, west) to each health board and prepares the data for merging with prescription datasets.  
+```{r, metrics per capita}
+# Merge population data with prescription data
+# This step combines the population data with prescription data to allow per-capita calculations.
+final_prescription_data <- region_ssri_prescriptions %>%
+  left_join(population_data, by = c("year", "hbt" = "hb")) %>%  # Match by year and health board codes
+  mutate(prescriptions_per_capita = total_paid_items / population)  # Calculate prescriptions per capita
 
-# Merge population data into prescription data
-prescription_population_data <- region_ssri_prescriptions %>%
-  left_join(hb_population, by = c("year", "hb_name"))
-
-# Check the merge
-summary(prescription_population_data)
-filter(prescription_population_data, is.na(population))  # Check for unmatched rows
-#the merge was successful
-```
-
-
-```{r metrics per capita, echo=FALSE}
-### Calculating Metrics per Capita
-
-# Add per capita metrics
-final_prescription_data <- prescription_population_data %>%
-  mutate(prescriptions_per_capita = total_paid_items / population)
-
-# View the first few rows
-head(final_prescription_data)
-
-# Summary statistics
-summary(final_prescription_data)
-
-```
-
-```{r final dataset, echo=FALSE}
-### Merge Final Prescription Data with Sunshine Hours 
-
+# Merge prescription data with sunshine data
+# Adds regional sunshine data to the prescription dataset for combined analysis.
 final_data <- final_prescription_data %>%
-  left_join(sunlight_data, by = c("year", "month", "region"))
-
-# Summary of the merged dataset
-summary(final_data)
-
-# Check for missing sunlight data
-filter(final_data, is.na(sunshine_hours))
-
-head(final_data)
+  left_join(sunlight_data, by = c("year", "month", "region")) %>%  # Match by year, month, and region
+  select(-hbt)  # Remove health board code column as it's no longer needed
 ```
-
-# Results 
-### Summary Table  
-```{r summary table, echo=FALSE}
-#prepare summary data
+**Summarize data for table and plot:**   
+This block aggregates SSRI prescription data and sunshine hours by year and month for summary tables and visualizations.  
+```{r, summary dataset}
+# Summarize prescription and sunshine data for Scotland by year and month
 scotland_summary <- final_data %>%
-  group_by(year, month) %>%
+  group_by(year, month) %>%  # Group data by year and month
   summarize(
-    total_prescriptions = sum(total_paid_items, na.rm = TRUE),
-    avg_sunshine_hours = mean(sunshine_hours, na.rm = TRUE),
-    .groups = "drop"
+    total_prescriptions = sum(total_paid_items, na.rm = TRUE),  # Calculate total prescriptions
+    avg_sunshine_hours = mean(sunshine_hours, na.rm = TRUE),   # Calculate average sunshine hours
+    .groups = "drop"  # Ungroup the data after summarization
   ) %>%
   mutate(
-    month = factor(month, levels = month.abb)  # Ensure months are ordered chronologically
+    month = factor(month, levels = month.abb)  # Convert months to ordered factors (e.g., Jan, Feb)
   ) %>%
-  arrange(year, month)  # Order by year and month
-
-#sort into seasons
+  arrange(year, month)  # Arrange the data by year and month for chronological order
+```
+**Attach Geomtery for Maps:**
+```{r, join geometry data}
+# Add geographic information to the final dataset
+# Merge the prescription and sunshine data with NHS Health Board spatial data for mapping
+final_data_with_geometry <- final_data %>%
+  left_join(NHS_healthboards, by = c("hb_name" = "hb_name"))  # Match health board names in both datasets
+```
+# Results and Analysis 
+### Figure 1: Summary Table   
+```{r summary table prep}
+# Aggregate prescription and sunshine data by year, month, and season
 scotland_seasonal_summary <- scotland_summary %>%
-  mutate(season = case_when(
-    month %in% c("Dec", "Jan", "Feb") ~ "Winter",
-    month %in% c("Mar", "Apr", "May") ~ "Spring",
-    month %in% c("Jun", "Jul", "Aug") ~ "Summer",
-    month %in% c("Sep", "Oct", "Nov") ~ "Autumn"
-  )) %>%
-  group_by(year, season) %>%
+  mutate(
+    # Assign seasons based on months
+    season = case_when(
+      month %in% c("Dec", "Jan", "Feb") ~ "Winter",  # Winter: December to February
+      month %in% c("Mar", "Apr", "May") ~ "Spring", # Spring: March to May
+      month %in% c("Jun", "Jul", "Aug") ~ "Summer", # Summer: June to August
+      month %in% c("Sep", "Oct", "Nov") ~ "Autumn"  # Autumn: September to November
+    )
+  ) %>%
+  group_by(year, season) %>%  # Group data by year and season
   summarize(
-    total_prescriptions = sum(total_prescriptions, na.rm = TRUE),
-    avg_sunshine_hours = mean(avg_sunshine_hours, na.rm = TRUE),
-    .groups = "drop"
+    total_prescriptions = sum(total_prescriptions, na.rm = TRUE),  # Total prescriptions for each season
+    avg_sunshine_hours = mean(avg_sunshine_hours, na.rm = TRUE),   # Average sunshine hours for each season
+    .groups = "drop"  # Ungroup after summarization
   )
 
-# Precompute maximum prescriptions for each year
-max_2022 <- max(scotland_seasonal_summary$total_prescriptions[scotland_seasonal_summary$year == 2022], na.rm = TRUE)
-max_2023 <- max(scotland_seasonal_summary$total_prescriptions[scotland_seasonal_summary$year == 2023], na.rm = TRUE)
+# Identify the maximum number of prescriptions for each year
+max_prescriptions <- scotland_seasonal_summary %>% 
+  group_by(year) %>%  # Group by year
+  summarize(
+    max_prescriptions = max(total_prescriptions, na.rm = TRUE)  # Compute maximum seasonal prescriptions per year
+  )
 ```
 
-```{r, results='asis'}
-# Create table
+This figure summarizes the total SSRI prescriptions and average sunshine hours for each season in 2022 and 2023. It highlights key metrics, including the maximum prescriptions for each year and the lowest sunshine hours, to identify seasonal trends in mental health treatment.  
+```{r summary-table , results='asis', fig.width=5, fig.height=6, fig.cap="Summary Table"}
+# Create a formatted table summarizing seasonal data for prescriptions and sunshine hours
 seasonal_summary_gt <- scotland_seasonal_summary %>%
-  gt(rowname_col = "season") %>%                      # Use Season as row labels
-  # Group rows by year
-  tab_row_group(
-    label = md("**2022**"),
-    rows = scotland_seasonal_summary$year == 2022
-  ) %>%
-  tab_row_group(
-    label = md("**2023**"),
-    rows = scotland_seasonal_summary$year == 2023
-  ) %>%
-  # Add a title and subtitle (with footnote)
+  gt(rowname_col = "season") %>%  # Use the "season" column as row labels
+
+  # Group rows by year for a clear distinction between data from 2022 and 2023
+  tab_row_group(label = md("**2022**"), rows = year == 2022) %>%
+  tab_row_group(label = md("**2023**"), rows = year == 2023) %>%
+
+  # Add a title, subtitle, and footnote to provide context and details about the table
   tab_header(
     title = md("**Seasonal Summary: Prescriptions and Sunshine Hours**"),
-    subtitle = md("Tracking *SSRI^1^* Prescription Trends Alongside Sunshine Patterns in Scotland")  
+    subtitle = md("Tracking *SSRI^1^* Prescription Trends Alongside Sunshine Patterns in Scotland")
   ) %>%
-  # Add footnote directly to 'SSRI'
   tab_footnote(
     footnote = "SSRI: Selective Serotonin Reuptake Inhibitors."
   ) %>%
-  # Add a source note for data origin
   tab_source_note(
     source_note = "Data sources: Sunshine hours from Meteorological Office; SSRI prescriptions from NHS Scotland."
   ) %>%
-  # Format the "Total Prescriptions" column with no decimals for clarity
-  fmt_number(
-    columns = "total_prescriptions",
-    decimals = 0
-  ) %>%
-  # Format the "Avg. Sunshine Hours" column with 2 decimals for precision 
-  fmt_number(
-    columns = "avg_sunshine_hours",
-    decimals = 2  
-  ) %>%
-  # Hide the "year" column
-  cols_hide(
-    columns = "year"
-  ) %>%
-  # Adjust column labels
+
+  # Format the numerical columns for better readability
+  fmt_number(columns = "total_prescriptions", decimals = 0) %>%  # No decimals for total prescriptions
+  fmt_number(columns = "avg_sunshine_hours", decimals = 2) %>%   # Two decimals for average sunshine hours
+
+  # Hide the "year" column since it’s already represented in the row grouping
+  cols_hide(columns = "year") %>%
+
+  # Adjust column labels for clarity and visual appeal
   cols_label(
     season = "Season",
     total_prescriptions = md("**Total Prescriptions**"),
     avg_sunshine_hours = md("**Avg. Sunshine Hours**")
   ) %>%
-  # Add a spanner
+
+  # Add a spanner to group metrics into a "Seasonal Metrics" category
   tab_spanner(
-    label = "Seasonal Metrics (2022-2023)",
+    label = md("**Seasonal Metrics (2022-2023)**"),
     columns = c(total_prescriptions, avg_sunshine_hours)
   ) %>%
-  tab_style(
-    style = cell_text(size = "10px", weight = "bold"),  # Bold and reduced spanner header size
-    locations = cells_column_spanners(spanners = "Seasonal Metrics (2022-2023)")
-  ) %>%
-  # Right-align numerical data
+
+  # Align numerical columns to the right for a professional look
   tab_style(
     style = cell_text(align = "right"),
     locations = cells_body(columns = c(total_prescriptions, avg_sunshine_hours))
   ) %>%
-  # Highlight rows with Avg. Sunshine Hours < 50 to highlight lowest
+
+  # Highlight specific rows where average sunshine hours are below 50
   tab_style(
-    style = list(
-      cell_fill(color = "#F7BCAC"),
-      cell_text(weight = "bold")),      # make stand out more 
+    style = cell_fill(color = "#F7BCAC"),  # Use a light color for low sunshine hours
     locations = cells_body(
-      columns = c(avg_sunshine_hours),
+      columns = avg_sunshine_hours,
       rows = avg_sunshine_hours < 50
     )
   ) %>%
-  # Highlight highest total_prescriptions in each year 
-  tab_style(
-    style = list(
-      cell_fill(color = "#F37A48"),
-      cell_text(weight = "bold")), # Highlight max prescriptions
-    locations = cells_body(
-      columns = c(total_prescriptions),
-      rows = total_prescriptions == max_2022 | total_prescriptions == max_2023
-    )
-  ) %>%
-  # Add light striping to alternate rows for ease of reader 
-  tab_style(
-    style = cell_fill(color = "#FAF5EF"),  
-    locations = cells_body(
-      rows = seq(1, nrow(scotland_seasonal_summary), 2)  # Select every other row
-    )
-  ) %>%
-  # Highlight year rows
-  tab_style(
-    style = list(
-      cell_fill(color = "#B7410E"),  # make tab headers stand out
-      cell_text(color = "white", weight = "bold")      # Bold text for emphasis, white for clarity 
-    ),
-    locations = cells_row_groups(groups = everything())# Apply to all year row groups
-  ) %>% 
-  # Compact table spacing
-  tab_options(
-    table.font.size = "small",
-    data_row.padding = px(5)  # Adjust row padding to decrease table size. 
-  ) 
 
+  # Highlight rows with the maximum prescriptions for each year
+  tab_style(
+    style = cell_fill(color = "#F37A48"),  # Use a bold color to emphasize maximum values
+    locations = cells_body(
+      columns = total_prescriptions,
+      rows = total_prescriptions %in% max_prescriptions$max_prescriptions
+    )
+  ) %>%
+
+  # Add alternate row striping for better readability
+  tab_style(
+    style = cell_fill(color = "#FAF5EF"),  # Use a subtle background color for alternate rows
+    locations = cells_body(rows = seq(1, nrow(scotland_seasonal_summary), 2))
+  ) %>%
+
+  # Highlight year group rows with bold, contrasting styles for better sectioning
+  tab_style(
+    style = list(
+      cell_fill(color = "#B7410E"),  # Bold background color for group rows
+      cell_text(color = "white", weight = "bold")  # White, bold text for contrast
+    ),
+    locations = cells_row_groups(groups = everything())
+  ) %>%
+
+  # Adjust the table font size and row spacing for a cleaner layout
+  tab_options(
+    table.font.size = "small",           # Reduce font size for compactness
+    data_row.padding = px(5)            # Adjust padding for better spacing
+  )
+
+# Display the formatted table
 seasonal_summary_gt
 ```
+**Figure 1 Analysis**
 
-The table highlights seasonal trends in SSRI prescriptions and sunshine hours in Scotland.
-Interestingly, the table shows that prescription rates peak in Spring 2023, not in winter. While the sunshine hours follow typical seasonal patterns, with the lowest in the winter and highest in the summer, the prescriptions do not reflect this. The spike in spring may suggest a lag effect between reduced daylight hours and SAD-related symptoms.  
+The seasonal summary table reveals distinct temporal trends in SSRI prescriptions. While **sunshine hours follow predictable seasonal patterns** (lowest in winter, highest in summer), **prescription rates peak in Spring 2023**, likely reflecting a **lag effect** of winter light deprivation (Eagles *et al.*, 1998; Lansdall-Welfare *et al.*, 2019).  
+Conversely, winter prescriptions are **lower than expected**, challenging the assumption that winter is the primary SAD treatment period. The spring peak suggests that symptoms persist beyond winter, leading to delayed treatment-seeking behavior.  
+To better understand these trends, a deeper examination of **monthly patterns** is necessary, as shown in **Figure 2**.  
 
-Next, I will investigate regional variations in sunlight and SSRI prescription rates to provide more context for these trends.   
+### Figure 2: Monthly Plot  
+This plot visualizes the monthly SSRI prescription trends in Scotland for 2022 and 2023. The figure highlights key peaks in March, August, and November and explores the lagging effects of winter sunlight deprivation and non-seasonal stressors.  
+```{r monthly-plot, results='asis', fig.width=8, fig.height=4, fig.cap="Monthly Plot"}
+# Add a hover text column for better tooltips in the interactive plot
+# This text will display detailed information when hovering over points in the plot
+scotland_summary <- scotland_summary %>%
+  mutate(
+    hover_text = paste(
+      "Month:", month, "<br>",                     # Display the month
+      "Year:", year, "<br>",                      # Display the year
+      "Total Prescriptions:",                    # Display the total prescriptions in x10^5 format
+      round(total_prescriptions / 1e5, 2), "x10^5"
+    )
+  )
 
--> hoping 2 maps side by side one which shows total prescriptions and one which shows prescriptions per capita  
+# Create the base ggplot for visualizing SSRI prescriptions trends over months
+p <- ggplot(scotland_summary, aes(
+  x = month,                                     # Month on the x-axis
+  y = total_prescriptions / 1e5,                 # Prescriptions scaled to x10^5 on the y-axis
+  group = year,                                  # Group data by year for separate lines
+  color = factor(year),                          # Different colors for each year
+  text = hover_text                              # Add custom hover text for tooltips
+)) +
+  geom_line(linewidth = 1) +                     # Add lines to connect monthly points
+  geom_point(size = 2, alpha = 0.8) +            # Add points to highlight monthly values
+  scale_y_continuous(
+    breaks = scales::pretty_breaks(n = 5),       # Set y-axis breaks for better readability
+    labels = scales::label_number(accuracy = 0.1)  # Format y-axis labels with one decimal point
+  ) +
+  scale_color_manual(
+    values = c("2022" = "#F7BCAC", "2023" = "#F37A48")  # Assign custom colors to each year
+  ) +
+  labs(
+    title = "Monthly SSRI Prescriptions in Scotland",        # Add plot title
+    subtitle = "Trends in SSRI prescriptions across Scotland over two years (2022-2023).",  # Add subtitle
+    x = "Month",                                            # Label for x-axis
+    y = "Total Prescriptions (x10^5)",                     # Label for y-axis
+    color = "Year"                                         # Legend label for color
+  ) +
+  theme_minimal()                                          # Use a minimal theme for a clean look
 
-OR
+# Convert the ggplot object to an interactive plot with tooltips
+# The "tooltip" parameter specifies that the hover text should use the "text" aesthetic
+interactive_plot <- ggplotly(p, session = "knitr", tooltip = "text")
 
-I will go on to assess and visualise which month has the highest prescriptions (before moving onto a map). 
+# Display the interactive plot
+interactive_plot
+```
+**Figure 2 Analysis**
+
+Figure 2 highlights monthly variations in SSRI prescriptions, with peaks in **March**, **August**, and **November**:  
+- **March Peak**: A **5.94% increase** in prescriptions compared to the yearly average (2023) reflects the **lingering effects of winter’s reduced light exposure**.  
+- **August Spike**: This unexpected peak may be driven by **non-seasonal societal stressors**, such as back-to-school anxiety and post-holiday adjustments (Jack *et al.*, 2023).  
+- **November Increase**: The rise in November aligns with shorter days and the return to GMT, known triggers for SAD symptoms.  
+
+**Calculation to find percentage increase:**
+
+<details><summary>Click to view code</summary>
+```{r, calculate % increase}
+# Filter data for the year 2023
+# This isolates the dataset to only include records for 2023
+data_2023 <- scotland_summary %>% 
+  filter(year == 2023)
+
+# Extract total prescriptions for March 2023
+# This retrieves the total prescription value for the specific month (March) in 2023
+march_2023 <- data_2023 %>% 
+  filter(month == "Mar") %>%  # Filter for March
+  pull(total_prescriptions)   # Extract the value of total prescriptions
+
+# Calculate the average monthly prescriptions for 2023
+# This computes the mean value of total prescriptions across all months in 2023
+average_2023 <- mean(data_2023$total_prescriptions, na.rm = TRUE)  # Handle any missing values
+
+# Calculate the percentage increase for March compared to the yearly average
+# Formula: ((March value - average value) / average value) * 100
+percentage_increase <- ((march_2023 - average_2023) / average_2023) * 100
+
+# Print the result
+# Display the calculated percentage increase with two decimal places
+cat(sprintf("The percentage increase for March 2023 compared to the yearly average is %.2f%%.", percentage_increase))
+```
+<details>
+
+### Figure 3: Regional Analysis Maps  
+These maps display regional patterns in SSRI prescriptions, per-capita prescription rates, and average sunlight hours across Scotland. They reveal how geographic disparities, such as sunlight exposure, influence mental health outcomes and treatment trends.  
+
+Subfigures:  
+Map A: Average Sunshine Hours by Health Board  
+Map B: Total SSRI Prescriptions by Health Board  
+Map C: Average Prescriptions Per Capita by Health Board 
+
+**Step 1: Wrangle Map Data**    
+This block defines a helper function to aggregate metrics by health board and year, merge them with spatial data, and prepare the results for mapping.  
+```{r regional-map, filtermaps, fig.cap="Regional Map"}
+# This function aggregates a specified metric by health board and year, joins the results with spatial data, 
+# and ensures the output is a spatial feature object for mapping.
+
+prepare_map_data <- function(data, metric_column, new_column_name) {
+  
+  # Step 1.1: Aggregate the specified metric by health board and year
+  # Group the data by health board name (hb_name) and year, then calculate the mean value of the specified metric.
+  aggregated_data <- data %>%
+    group_by(hb_name, year) %>%  # Group by health board and year for aggregation
+    summarize(
+      value = mean({{ metric_column }}, na.rm = TRUE),  # Calculate the mean value, ignoring missing values
+      .groups = "drop"  # Drop grouping after summarization to avoid unintended behavior in subsequent operations
+    )
+  
+  # Step 1.2: Rename the aggregated metric column
+  # Dynamically rename the column for clarity, using the provided new_column_name argument.
+  renamed_data <- aggregated_data %>%
+    rename(!!new_column_name := value)  # Use `:=` for dynamic renaming based on the function's input
+  
+  # Step 1.3: Merge the aggregated data with spatial data
+  # Join the aggregated data with NHS health board geometries to enable spatial mapping.
+  joined_data <- renamed_data %>%
+    left_join(NHS_healthboards, by = "hb_name")  # Ensure the "hb_name" column matches in both datasets
+  
+  # Step 1.4: Convert the result to a spatial feature (sf) object
+  # Explicitly transform the joined data into an sf object, required for spatial visualization with ggplot2.
+  spatial_data <- st_as_sf(joined_data)
+  
+  # Step 1.5: Return the processed spatial data
+  return(spatial_data)
+}
+```
+**Step 2: Prepare Data for Mapping**  
+Here, the `prepare_map_data()` function is applied to create datasets for average sunlight hours, total prescriptions, and prescriptions per capita.  
+```{r, prepare data for map}
+# Each call aggregates a specific metric, joins it with spatial data, and prepares it for mapping.
+# Prepare map data for average sunlight hours
+# Aggregates sunshine hours by health board and year, calculating the average for mapping purposes.
+sunlight_map_data <- prepare_map_data(
+  final_data_with_geometry,  # Input dataset containing prescription and sunshine data
+  sunshine_hours,            # Metric to aggregate: total sunshine hours
+  "avg_sunshine_hours"       # Name of the new column for the aggregated data
+)
+
+# Prepare map data for total SSRI prescriptions
+# Aggregates the total number of SSRI prescriptions by health board and year for visualization.
+prescriptions_map_data <- prepare_map_data(
+  final_data_with_geometry,  # Input dataset containing prescription data
+  total_paid_items,          # Metric to aggregate: total paid items for prescriptions
+  "total_prescriptions"      # Name of the new column for the aggregated data
+)
+
+# Prepare map data for per-capita SSRI prescriptions
+# Aggregates per-capita prescription rates by health board and year for normalization.
+per_capita_map_data <- prepare_map_data(
+  final_data_with_geometry,  # Input dataset containing per-capita prescription rates
+  prescriptions_per_capita,  # Metric to aggregate: prescriptions per capita
+  "avg_prescriptions_per_capita"  # Name of the new column for the aggregated data
+)
+```
+**Step 3: Define the Map Creation Function**    
+This function standardizes the process of creating maps by defining how data is visualized, labeled, and styled.  
+```{r, create maps}
+# This function takes spatial data and mapping parameters to produce a customized ggplot map.
+create_map <- function(data, value_column, title, fill_label) {
+  ggplot(data) +  # Initialize the ggplot object with the provided spatial data
+    geom_sf(  # Add spatial features (polygons) to the plot
+      aes_string(fill = value_column),  # Dynamically specify the fill aesthetic using the value_column
+      color = "black"  # Set the border color for polygons
+    ) +
+    scale_fill_viridis_c(  # Apply a Viridis color scale for better visual accessibility
+      option = "inferno",  # Use the "inferno" color palette
+      name = fill_label    # Set the legend label to the provided fill_label
+    ) +
+    labs(  # Add titles and a data source caption
+      title = title,  # Main title for the map
+      caption = "Data sources: NHS Scotland and MET Office"  # Attribution for data sources
+    ) +
+    theme_minimal() +  # Apply a minimal theme for a clean appearance
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold"),  # Center-align the title and make it bold
+      legend.position = "right"  # Place the legend on the right side of the map
+    ) +
+    facet_wrap(~year)  # Create a separate map for each year in the dataset
+}
+```
+**Step 4: Generate Maps**  
+This block uses the `create_map()` function to generate individual maps for each metric.  
+```{r, generate maps}
+# Generate a map of average sunlight hours
+# This map visualizes the average sunshine hours by health board and year
+map_sunlight <- create_map(
+  sunlight_map_data,            # Input spatial dataset for sunlight
+  "avg_sunshine_hours",         # Column representing average sunshine hours
+  "Average Sunlight Hours by Health Board",  # Map title
+  "Avg. Sunlight Hours"         # Legend label
+) + coord_sf(datum = NA)  # Remove coordinate reference system to avoid distortion
+
+# Generate a map of total SSRI prescriptions
+# This map visualizes the total number of SSRI prescriptions by health board and year
+map_prescriptions <- create_map(
+  prescriptions_map_data,       # Input spatial dataset for prescriptions
+  "total_prescriptions",        # Column representing total prescriptions
+  "Total Prescriptions by Health Board",  # Map title
+  "Total Prescriptions"         # Legend label
+) + coord_sf(datum = NA)  # Remove coordinate reference system to avoid distortion
+
+# Generate a map of average per-capita SSRI prescriptions
+# This map visualizes the average number of prescriptions per capita by health board and year
+map_avg_per_capita <- create_map(
+  per_capita_map_data,          # Input spatial dataset for per-capita prescriptions
+  "avg_prescriptions_per_capita",  # Column representing prescriptions per capita
+  "Average Prescriptions Per Capita by Health Board",  # Map title
+  "Prescriptions Per Capita"    # Legend label
+) + coord_sf(datum = NA)  # Remove coordinate reference system to avoid distortion
+```
+**Step 5: Combine maps**  
+The final step combines the individual maps into a single figure for comparison using `plot_grid()`.  
+```{r, combine maps, fig.width=8, fig.height=8}
+# Combine individual maps into a single figure
+# This step arranges the three maps (sunlight, total prescriptions, per capita prescriptions)
+# into one visual layout for easy comparison.
+
+combined_maps <- plot_grid(
+  map_sunlight,               # Map showing average sunlight hours
+  map_prescriptions,          # Map showing total prescriptions
+  map_avg_per_capita,         # Map showing per-capita prescriptions
+  labels = c("A", "B", "C"),  # Add labels to identify each map (optional)
+  ncol = 1                    # Arrange maps in a vertical layout; change to `ncol = 2` for horizontal layout
+)
+
+# Display the combined map layout
+combined_maps
+```
+**Figure 3 Analysis**
+
+The maps in Figure 3 reveal significant regional trends in sunlight exposure and SSRI prescriptions:  
+
+- **Map A: Average Sunlight Hours**: Northern regions (e.g., Orkney, Shetland, and the Western Isles) report **lower sunlight exposure**, reflecting their latitude. This likely exacerbates SAD symptoms (Lansdall-Welfare *et al.*, 2019).  
+- **Map B: Total Prescriptions**: Urban centers like Greater Glasgow and Clyde exhibit the **highest total prescription volumes**, reflecting their larger populations and access to healthcare infrastructure.  
+- **Map C: Per-Capita Prescriptions**: High per-capita prescription rates in rural northern areas underscore the **compounded challenges of low sunlight exposure and limited mental health resources**.  
+
+These findings highlight the need for **targeted mental health strategies**, particularly in northern and rural regions.  
+
+# Discussion  
+
+## Synthesis of Key Findings  
+
+**Temporal Trends**    
+
+As shown in **Figure 2**, monthly SSRI prescriptions reveal distinct peaks in **March**, **August**, and **November**:
+
+- **Spring Lag Effect (March)**: The peak in March supports the hypothesis of a **delayed psychological response** to winter's reduced sunlight. Research suggests that sunlight deprivation effects can linger for months, with individuals often seeking treatment later in the season (Eagles et al., 1998; Lansdall-Welfare et al., 2019).
+- **Unexpected August Spike**: Contrary to seasonal expectations, the August peak may reflect **non-seasonal societal stressors**, such as back-to-school anxiety and post-holiday transitions (Jack et al., 2023).
+- **Winter Preparatory Prescriptions (November)**: The increase in November aligns with the **onset of shorter days** and the return to GMT, which are known triggers for SAD symptoms.
+
+Notably, the **March peak** challenges traditional assumptions that winter is the primary treatment period for SAD, suggesting **extended seasonal effects** and potential delays in symptom recognition or treatment-seeking behavior.
+
+**Regional Variability**  
+
+The geographical patterns in **Figure 3** highlight disparities in sunlight exposure and prescription trends:
+
+- **High Per-Capita Prescriptions in Northern Regions**: Areas like Orkney, Shetland, and the Western Isles report disproportionately high per-capita prescriptions due to **extreme seasonal light fluctuations** and **limited access to alternative treatments**.
+- **Urban vs. Rural Dynamics**: While urban centers such as Greater Glasgow and Clyde show higher total prescriptions, these regions report lower per-capita rates, reflecting the availability of **diverse mental health resources** beyond medication.
+
+These findings underscore the need for **region-specific interventions**, particularly in high-risk northern and rural areas.
+
+**Relationship Between Prescriptions and Seasonal Patterns**  
+
+As illustrated in **Figure 1**, SSRI prescriptions deviate from sunshine hours, which follow predictable seasonal patterns. While sunshine hours peak in summer and dip in winter:
+
+- Prescriptions peak in **March** and **November**, coinciding with **transitional periods** in daylight.  
+- The **summer anomaly** in August highlights the role of **non-seasonal drivers**, including societal stressors.
+
+This **decoupling of sunlight and prescription trends** suggests that **SAD-related treatment-seeking behavior** is influenced by a combination of environmental and societal factors.
+
+## Limitations and Future Directions  
+
+**Limitations**  
+1 **Data Specificity**: The absence of diagnostic data limits this study to general SSRI usage trends rather than SAD-specific patterns.  
+2. **Confounding Variables**: Factors such as socioeconomic conditions, healthcare accessibility, and cultural differences were not included but could significantly influence prescription trends.  
+3. **Aggregation Levels**: Health board-level data may obscure localized patterns, such as those occurring at the community or GP level.
+
+**Future Research**   
+To address these limitations, future studies should:
+- **Incorporate Diagnostic Data**: Linking SSRI prescriptions to SAD diagnoses could provide clearer insights into treatment patterns.  
+- **Explore Non-Seasonal Drivers**: Investigate societal stressors, like economic pressures or healthcare access, which may contribute to unexpected trends like the August spike.  
+- **Examine Alternative Treatments**: Assess the effectiveness of light therapy or counseling services and their availability in high-risk regions.
+
+---
+
+<div style="background-color: #FFDFBF; padding: 10px; border-left: 4px solid #FF6633;">
+💡 **Policy Implication**: Increasing access to light therapy in northern and rural areas could mitigate the over-reliance on SSRIs, particularly during peak seasons.
+</div>
+
+---
+
+# Conclusion  
+
+This analysis highlights significant temporal and regional variability in SSRI prescriptions across Scotland:
+
+- **Temporal Trends**: Peaks in **March**, **August**, and **November** suggest a **complex interaction** between environmental factors (e.g., sunlight) and societal drivers (e.g., stress).
+- **Regional Disparities**: Higher per-capita prescriptions in northern regions reflect **compounded challenges** of low sunlight exposure and limited access to alternative mental health resources.
+
+These findings challenge traditional assumptions about SAD-related treatment and underscore the need for **regionally tailored interventions**. Expanding access to light therapy and promoting awareness campaigns during **late winter and early spring** could improve the management of seasonal mood disorders, reducing their burden on public health.
+
+> 🌍 **Broader Impact**: By addressing these disparities, policymakers can improve mental health outcomes across diverse populations, ensuring equitable access to treatment for those most affected by seasonal mood disorders.
+
+
+
+# References 
+
+- [Eagles, J.M., Naji, S.A., Gray, D.A., Christie, J. and Beattie, J.A., 1998. Seasonal affective disorder among primary care consulters in January: Prevalence and month-by-month consultation patterns. *Journal of Affective Disorders*, 49(1), pp.1-8.](https://www.semanticscholar.org/paper/Seasonal-affective-disorder-among-primary-care-in-Eagles-Naji/2c59aba12444e62962b3e1272840f81e8b5d4495).  
+
+- [Jack, R.H., Joseph, R.M., Hollis, C., Hippisley-Cox, J., Butler, D., Waldram, D. and Coupland, C., 2023. Seasonal trends in antidepressant prescribing, depression, anxiety, and self-harm in adolescents and young adults: An open cohort study using English primary care data. *BMJ Mental Health*, 26(1).](https://ora.ox.ac.uk/objects/uuid:92ee0e39-076a-42cd-a217-27ddf6026b17).  
+
+- [Lansdall-Welfare, T., Lightman, S. and Cristianini, N., 2019. Seasonal variation in antidepressant prescriptions, environmental light and web queries for seasonal affective disorder. *The British Journal of Psychiatry*, 215(2), pp.481-484.](https://pubmed.ncbi.nlm.nih.gov/30924435/).  
+
+- [National Health Service (NHS), n.d. Seasonal Affective Disorder (SAD): Treatment.](https://www.nhs.uk/mental-health/conditions/seasonal-affective-disorder-sad/treatment/) [Accessed 21 November 2024].  
+
+- [National Institute for Health and Care Excellence (NICE), n.d. Depression in adults: treatment and management.](https://www.nice.org.uk/guidance/ng222) [Accessed 21 November 2024].  
+
+# AI Disclaimer  
+
+During the development of this report, I utilised AI as a tool to enhance both the analytical process and the presentation of the findings. Specifically:  
+**Warnings and Error Resolution:** AI tools helped me to understand, so I could troubleshoot, warnings and errors encountered during data processing. This ensured that the analysis pipeline ran smoothly and efficiently.  
+**File Integration and Parsing:** Guidance was provided by AI to integrate the MET hours text file into the workflow, as this was a type of file I had not encountered before. This included parsing the large datasets and automating the cleaning process for improved efficiency.  
+**CSS File Creation and Optimization:** AI was used to help me understand how to design and refine a custom CSS file that tailored the report for both digital and print outputs. Adjustments included:  
+    1. General font sizing and line spacing for readability.  
+    2. Compact and professional styling for code blocks, figures, and headers.  
+    3. Print-specific optimizations, such as hiding the table of contents (TOC) and   managing spacing for a more polished and efficient print layout.  
+    4. Ensuring code blocks could split across pages without disrupting readability.  
+
 
 

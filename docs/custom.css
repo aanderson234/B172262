@@ -1,0 +1,164 @@
+/* General font size and line spacing for the document */
+body {
+  font-size: 12px; /* Easy-to-read size for both digital and printed versions */
+  line-height: 1.5; /* Good spacing between lines for readability */
+  margin: 10px; /* Small margins to keep the content centered */
+  padding: 0; /* No extra padding for a clean layout */
+}
+
+/* Styling for code blocks */
+pre, code {
+  font-size: 10px; /* Small font to fit more code on the screen */
+  font-family: Consolas, Monaco, "Courier New", monospace; /* Code-friendly fonts */
+  line-height: 1.2; /* Compact spacing for code */
+  background-color: #f9f9f9; /* Light gray background for contrast */
+  padding: 5px; /* Adds a little space around the code */
+  border: none; /* No borders for simplicity */
+  border-radius: 0; /* No rounded corners to match the theme */
+  margin-top: 0.2em; /* Small space above code */
+  margin-bottom: 0.2em; /* Small space below code */
+  box-shadow: none; /* Removes shadows for a flat look */
+}
+
+/* Allow code blocks to split across pages in print */
+pre {
+  page-break-inside: auto; /* Splits code naturally across pages when printing */
+  max-width: 95%; /* Keeps code from stretching too wide */
+  overflow-x: auto; /* Adds horizontal scrolling for long lines */
+}
+
+/* Figure styling */
+figure {
+  margin-top: 0px; /* No extra space above figures */
+  margin-bottom: 0px; /* No extra space below figures */
+}
+
+/* Keep text and images/figures close together */
+p + img, p + .figure {
+  margin-top: 0px; /* No gap above figures */
+  margin-bottom: 0px; /* No gap below figures */
+}
+
+/* Styling for headers */
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0.5em; /* Small space above headers */
+  margin-bottom: 0.2em; /* Small space below headers */
+}
+
+/* Reduce paragraph spacing */
+p {
+  margin-top: 0.2em;
+  margin-bottom: 0.2em;
+}
+
+/* Fix for highlighted sections with orange background */
+.DataSources, .DataSources * {
+  color: #000000; /* Black text for better visibility */
+}
+
+/* Plotly interactive plot styling */
+.plotly {
+  margin: auto; /* Center the plots */
+  padding: 0; /* No extra padding */
+  width: 100% !important; /* Stretch plots to the full width of the container */
+  height: auto !important; /* Adjust height automatically */
+  max-width: none !important; /* Avoid clipping issues */
+  overflow: visible !important; /* Ensure interactive tooltips are visible */
+}
+
+/* Special class for isolating Plotly plots */
+.interactive-plot {
+  margin: auto; /* Center the interactive plot */
+  padding: 0;
+  width: 100%; /* Full width */
+  height: auto; /* Automatically adjust height */
+  max-width: none;
+}
+
+/* Printing styles */
+@media print {
+  pre, code {
+    font-size: 10px; /* Small font for compact code printing */
+    line-height: 1.1; /* Tight spacing to save space */
+    margin-top: 0.1em;
+    margin-bottom: 0.1em;
+    page-break-inside: auto; /* Allows code to split naturally on pages */
+  }
+  body {
+    margin: 10px; /* Small margins for efficient use of space */
+  }
+  /* Hide the table of contents for printed versions */
+  body #toc, body .toc {
+    display: none !important; /* TOC is unnecessary in print */
+  }
+  /* Ensure consistent spacing for figures */
+  figure {
+    margin-top: 0px;
+    margin-bottom: 0px;
+  }
+  img, .figure {
+    margin-top: 0px;
+    margin-bottom: 0px;
+  }
+}
+
+/* Styling for the table of contents (TOC) */
+#TOC, .toc {
+  background-color: #fff5e6; /* Light orange background for TOC */
+  border: 1px solid #F37A48; /* Orange border */
+  padding: 10px; /* Adds padding inside the TOC box */
+  border-radius: 5px; /* Rounded corners for a softer look */
+}
+
+/* Highlight active section in TOC */
+#TOC .active a, .toc .active a {
+  color: #d35400 !important; /* Dark orange for active text */
+  background-color: #ffe5cc !important; /* Slightly darker background for active links */
+  border-left: 4px solid #F37A48 !important; /* Bright orange border for the active section */
+  padding-left: 8px; /* Indent text to align with the border */
+  font-weight: bold; /* Bold text for emphasis */
+  text-decoration: none; /* Remove underline for active links */
+}
+
+/* Styling for inactive TOC links */
+#TOC a, .toc a {
+  color: #000000; /* Black for non-active links */
+  text-decoration: none; /* No underline for inactive links */
+}
+
+/* Hover effect for TOC links */
+#TOC a:hover, .toc a:hover {
+  color: #F37A48; /* Bright orange on hover */
+  text-decoration: underline; /* Add underline for clarity */
+}
+
+/* Ensure active section styling is consistent */
+#TOC .active, .toc .active {
+  background-color: #ffe5cc !important; /* Light orange background for active section */
+  font-weight: bold; /* Bold text for emphasis */
+  border-left: 4px solid #F37A48 !important; /* Orange border on the left */
+  color: #000000; /* Black text */
+}
+
+/* Styling for visited TOC links */
+#TOC a:visited, .toc a:visited {
+  color: #d35400; /* Dark orange for visited links */
+}
+
+/* Consistent font for the document */
+body {
+  font-family: "Arial", sans-serif; /* Easy-to-read font */
+  font-size: 12px; /* Standard font size */
+  line-height: 1.6; /* Comfortable line spacing */
+}
+
+/* Customization for headers */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Arial", sans-serif; /* Same font as body */
+  font-weight: bold; /* Bold text for headers */
+}
+
+pre, code {
+  font-family: "Courier New", monospace; /* Monospace font for code blocks */
+  font-size: 11px; /* Slightly smaller font for code */
+}
