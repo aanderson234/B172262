@@ -204,11 +204,11 @@ all_prescription_data <- all_prescription_data %>%
 
 # # Save the cleaned dataset as a CSV file for reuse in future analysis
 # # Storing the processed data prevents the need to reprocess raw data repeatedly.
-write_csv(all_prescription_data, "data/processed_prescriptions.csv")
+write_csv(all_prescription_data, here("data", "processed_prescriptions.csv"))
 
 # Load the saved dataset for further analysis
 # This reads in the previously saved processed data for continued analysis in the pipeline.
-all_prescription_data <- read_csv(here("data/processed_prescriptions.csv")) %>% 
+all_prescription_data <- read_csv(here("data", "processed_prescriptions.csv")) %>% 
   clean_names()  # Standardize column names for easier handling
 ```
 ## Wrangling Data  
@@ -310,87 +310,61 @@ This figure summarizes the total SSRI prescriptions and average sunshine hours f
 # Create a formatted table summarizing seasonal data for prescriptions and sunshine hours
 seasonal_summary_gt <- scotland_seasonal_summary %>%
   gt(rowname_col = "season") %>%  # Use the "season" column as row labels
-
   # Group rows by year for a clear distinction between data from 2022 and 2023
   tab_row_group(label = md("**2022**"), rows = year == 2022) %>%
   tab_row_group(label = md("**2023**"), rows = year == 2023) %>%
-
   # Add a title, subtitle, and footnote to provide context and details about the table
   tab_header(
     title = md("**Seasonal Summary: Prescriptions and Sunshine Hours**"),
-    subtitle = md("Tracking *SSRI^1^* Prescription Trends Alongside Sunshine Patterns in Scotland")
-  ) %>%
+    subtitle = md("Tracking *SSRI^1^* Prescription Trends Alongside Sunshine Patterns in Scotland")) %>%
   tab_footnote(
-    footnote = "SSRI: Selective Serotonin Reuptake Inhibitors."
-  ) %>%
+    footnote = "SSRI: Selective Serotonin Reuptake Inhibitors.") %>%
   tab_source_note(
-    source_note = "Data sources: Sunshine hours from Meteorological Office; SSRI prescriptions from NHS Scotland."
-  ) %>%
-
+    source_note = "Data sources: Sunshine hours from Meteorological Office; SSRI prescriptions from NHS Scotland.") %>%
   # Format the numerical columns for better readability
   fmt_number(columns = "total_prescriptions", decimals = 0) %>%  # No decimals for total prescriptions
   fmt_number(columns = "avg_sunshine_hours", decimals = 2) %>%   # Two decimals for average sunshine hours
-
   # Hide the "year" column since it’s already represented in the row grouping
   cols_hide(columns = "year") %>%
-
   # Adjust column labels for clarity and visual appeal
   cols_label(
     season = "Season",
     total_prescriptions = md("**Total Prescriptions**"),
-    avg_sunshine_hours = md("**Avg. Sunshine Hours**")
-  ) %>%
-
+    avg_sunshine_hours = md("**Avg. Sunshine Hours**")) %>%
   # Add a spanner to group metrics into a "Seasonal Metrics" category
   tab_spanner(
     label = md("**Seasonal Metrics (2022-2023)**"),
-    columns = c(total_prescriptions, avg_sunshine_hours)
-  ) %>%
-
+    columns = c(total_prescriptions, avg_sunshine_hours)) %>%
   # Align numerical columns to the right for a professional look
   tab_style(
     style = cell_text(align = "right"),
-    locations = cells_body(columns = c(total_prescriptions, avg_sunshine_hours))
-  ) %>%
-
+    locations = cells_body(columns = c(total_prescriptions, avg_sunshine_hours))) %>%
   # Highlight specific rows where average sunshine hours are below 50
   tab_style(
     style = cell_fill(color = "#F7BCAC"),  # Use a light color for low sunshine hours
     locations = cells_body(
       columns = avg_sunshine_hours,
-      rows = avg_sunshine_hours < 50
-    )
-  ) %>%
-
+      rows = avg_sunshine_hours < 50)) %>% 
   # Highlight rows with the maximum prescriptions for each year
   tab_style(
     style = cell_fill(color = "#F37A48"),  # Use a bold color to emphasize maximum values
     locations = cells_body(
       columns = total_prescriptions,
-      rows = total_prescriptions %in% max_prescriptions$max_prescriptions
-    )
-  ) %>%
-
+      rows = total_prescriptions %in% max_prescriptions$max_prescriptions)) %>% 
   # Add alternate row striping for better readability
   tab_style(
     style = cell_fill(color = "#FAF5EF"),  # Use a subtle background color for alternate rows
-    locations = cells_body(rows = seq(1, nrow(scotland_seasonal_summary), 2))
-  ) %>%
-
+    locations = cells_body(rows = seq(1, nrow(scotland_seasonal_summary), 2))) %>%
   # Highlight year group rows with bold, contrasting styles for better sectioning
   tab_style(
     style = list(
       cell_fill(color = "#B7410E"),  # Bold background color for group rows
-      cell_text(color = "white", weight = "bold")  # White, bold text for contrast
-    ),
-    locations = cells_row_groups(groups = everything())
-  ) %>%
-
+      cell_text(color = "white", weight = "bold")),  # White, bold text for contrast
+    locations = cells_row_groups(groups = everything())) %>%
   # Adjust the table font size and row spacing for a cleaner layout
   tab_options(
     table.font.size = "small",           # Reduce font size for compactness
-    data_row.padding = px(5)            # Adjust padding for better spacing
-  )
+    data_row.padding = px(5))            # Adjust padding for better spacing
 
 # Display the formatted table
 seasonal_summary_gt
@@ -412,9 +386,7 @@ scotland_summary <- scotland_summary %>%
       "Month:", month, "<br>",                     # Display the month
       "Year:", year, "<br>",                      # Display the year
       "Total Prescriptions:",                    # Display the total prescriptions in x10^5 format
-      round(total_prescriptions / 1e5, 2), "x10^5"
-    )
-  )
+      round(total_prescriptions / 1e5, 2), "x10^5"))
 
 # Create the base ggplot for visualizing SSRI prescriptions trends over months
 p <- ggplot(scotland_summary, aes(
@@ -422,24 +394,20 @@ p <- ggplot(scotland_summary, aes(
   y = total_prescriptions / 1e5,                 # Prescriptions scaled to x10^5 on the y-axis
   group = year,                                  # Group data by year for separate lines
   color = factor(year),                          # Different colors for each year
-  text = hover_text                              # Add custom hover text for tooltips
-)) +
+  text = hover_text)) +                              # Add custom hover text for tooltips
   geom_line(linewidth = 1) +                     # Add lines to connect monthly points
   geom_point(size = 2, alpha = 0.8) +            # Add points to highlight monthly values
   scale_y_continuous(
     breaks = scales::pretty_breaks(n = 5),       # Set y-axis breaks for better readability
-    labels = scales::label_number(accuracy = 0.1)  # Format y-axis labels with one decimal point
-  ) +
+    labels = scales::label_number(accuracy = 0.1)) +  # Format y-axis labels with one decimal point
   scale_color_manual(
-    values = c("2022" = "#F7BCAC", "2023" = "#F37A48")  # Assign custom colors to each year
-  ) +
+    values = c("2022" = "#F7BCAC", "2023" = "#F37A48")) + # Assign custom colors to each year
   labs(
     title = "Monthly SSRI Prescriptions in Scotland",        # Add plot title
     subtitle = "Trends in SSRI prescriptions across Scotland over two years (2022-2023).",  # Add subtitle
     x = "Month",                                            # Label for x-axis
     y = "Total Prescriptions (x10^5)",                     # Label for y-axis
-    color = "Year"                                         # Legend label for color
-  ) +
+    color = "Year") +                                        # Legend label for color
   theme_minimal()                                          # Use a minimal theme for a clean look
 
 # Convert the ggplot object to an interactive plot with tooltips
@@ -496,19 +464,15 @@ Map C: Average Prescriptions Per Capita by Health Board
 **Step 1: Wrangle Map Data**    
 This block defines a helper function to aggregate metrics by health board and year, merge them with spatial data, and prepare the results for mapping.  
 ```{r regional-map, filtermaps, fig.cap="Regional Map"}
-# This function aggregates a specified metric by health board and year, joins the results with spatial data, 
-# and ensures the output is a spatial feature object for mapping.
-
+# This function aggregates a specified metric by health board and year, joins the results with spatial data, and ensures the output is a spatial feature object for mapping.
 prepare_map_data <- function(data, metric_column, new_column_name) {
-  
   # Step 1.1: Aggregate the specified metric by health board and year
   # Group the data by health board name (hb_name) and year, then calculate the mean value of the specified metric.
   aggregated_data <- data %>%
     group_by(hb_name, year) %>%  # Group by health board and year for aggregation
     summarize(
       value = mean({{ metric_column }}, na.rm = TRUE),  # Calculate the mean value, ignoring missing values
-      .groups = "drop"  # Drop grouping after summarization to avoid unintended behavior in subsequent operations
-    )
+      .groups = "drop") # Drop grouping after summarization to avoid unintended behavior in subsequent operations 
   
   # Step 1.2: Rename the aggregated metric column
   # Dynamically rename the column for clarity, using the provided new_column_name argument.
@@ -537,24 +501,21 @@ Here, the `prepare_map_data()` function is applied to create datasets for averag
 sunlight_map_data <- prepare_map_data(
   final_data_with_geometry,  # Input dataset containing prescription and sunshine data
   sunshine_hours,            # Metric to aggregate: total sunshine hours
-  "avg_sunshine_hours"       # Name of the new column for the aggregated data
-)
+  "avg_sunshine_hours")      # Name of the new column for the aggregated data
 
 # Prepare map data for total SSRI prescriptions
 # Aggregates the total number of SSRI prescriptions by health board and year for visualization.
 prescriptions_map_data <- prepare_map_data(
   final_data_with_geometry,  # Input dataset containing prescription data
   total_paid_items,          # Metric to aggregate: total paid items for prescriptions
-  "total_prescriptions"      # Name of the new column for the aggregated data
-)
+  "total_prescriptions")      # Name of the new column for the aggregated data
 
 # Prepare map data for per-capita SSRI prescriptions
 # Aggregates per-capita prescription rates by health board and year for normalization.
 per_capita_map_data <- prepare_map_data(
   final_data_with_geometry,  # Input dataset containing per-capita prescription rates
   prescriptions_per_capita,  # Metric to aggregate: prescriptions per capita
-  "avg_prescriptions_per_capita"  # Name of the new column for the aggregated data
-)
+  "avg_prescriptions_per_capita")  # Name of the new column for the aggregated data
 ```
 **Step 3: Define the Map Creation Function**    
 This function standardizes the process of creating maps by defining how data is visualized, labeled, and styled.  
@@ -564,21 +525,17 @@ create_map <- function(data, value_column, title, fill_label) {
   ggplot(data) +  # Initialize the ggplot object with the provided spatial data
     geom_sf(  # Add spatial features (polygons) to the plot
       aes_string(fill = value_column),  # Dynamically specify the fill aesthetic using the value_column
-      color = "black"  # Set the border color for polygons
-    ) +
+      color = "black") +  # Set the border color for polygons
     scale_fill_viridis_c(  # Apply a Viridis color scale for better visual accessibility
       option = "inferno",  # Use the "inferno" color palette
-      name = fill_label    # Set the legend label to the provided fill_label
-    ) +
+      name = fill_label) +   # Set the legend label to the provided fill_label
     labs(  # Add titles and a data source caption
       title = title,  # Main title for the map
-      caption = "Data sources: NHS Scotland and MET Office"  # Attribution for data sources
-    ) +
+      caption = "Data sources: NHS Scotland and MET Office") +  # Attribution for data sources
     theme_minimal() +  # Apply a minimal theme for a clean appearance
     theme(
-      plot.title = element_text(hjust = 0.5, face = "bold"),  # Center-align the title and make it bold
-      legend.position = "right"  # Place the legend on the right side of the map
-    ) +
+      plot.title = element_text(hjust = 0.5, face = "bold"),  # Center-align title & make it bold
+      legend.position = "right") + # Place the legend on the right side of the map
     facet_wrap(~year)  # Create a separate map for each year in the dataset
 }
 ```
@@ -624,8 +581,7 @@ combined_maps <- plot_grid(
   map_prescriptions,          # Map showing total prescriptions
   map_avg_per_capita,         # Map showing per-capita prescriptions
   labels = c("A", "B", "C"),  # Add labels to identify each map (optional)
-  ncol = 1                    # Arrange maps in a vertical layout; change to `ncol = 2` for horizontal layout
-)
+  ncol = 1)                    # Arrange maps in a vertical layout; change to `ncol = 2` for horizontal layout
 
 # Display the combined map layout
 combined_maps
