@@ -496,19 +496,15 @@ Map C: Average Prescriptions Per Capita by Health Board
 **Step 1: Wrangle Map Data**    
 This block defines a helper function to aggregate metrics by health board and year, merge them with spatial data, and prepare the results for mapping.  
 ```{r regional-map, filtermaps, fig.cap="Regional Map"}
-# This function aggregates a specified metric by health board and year, joins the results with spatial data, 
-# and ensures the output is a spatial feature object for mapping.
-
+# This function aggregates a specified metric by health board and year, joins the results with spatial data, and ensures the output is a spatial feature object for mapping.
 prepare_map_data <- function(data, metric_column, new_column_name) {
-  
   # Step 1.1: Aggregate the specified metric by health board and year
   # Group the data by health board name (hb_name) and year, then calculate the mean value of the specified metric.
   aggregated_data <- data %>%
     group_by(hb_name, year) %>%  # Group by health board and year for aggregation
     summarize(
       value = mean({{ metric_column }}, na.rm = TRUE),  # Calculate the mean value, ignoring missing values
-      .groups = "drop"  # Drop grouping after summarization to avoid unintended behavior in subsequent operations
-    )
+      .groups = "drop") # Drop grouping after summarization to avoid unintended behavior in subsequent operations 
   
   # Step 1.2: Rename the aggregated metric column
   # Dynamically rename the column for clarity, using the provided new_column_name argument.
@@ -537,24 +533,21 @@ Here, the `prepare_map_data()` function is applied to create datasets for averag
 sunlight_map_data <- prepare_map_data(
   final_data_with_geometry,  # Input dataset containing prescription and sunshine data
   sunshine_hours,            # Metric to aggregate: total sunshine hours
-  "avg_sunshine_hours"       # Name of the new column for the aggregated data
-)
+  "avg_sunshine_hours")      # Name of the new column for the aggregated data
 
 # Prepare map data for total SSRI prescriptions
 # Aggregates the total number of SSRI prescriptions by health board and year for visualization.
 prescriptions_map_data <- prepare_map_data(
   final_data_with_geometry,  # Input dataset containing prescription data
   total_paid_items,          # Metric to aggregate: total paid items for prescriptions
-  "total_prescriptions"      # Name of the new column for the aggregated data
-)
+  "total_prescriptions")      # Name of the new column for the aggregated data
 
 # Prepare map data for per-capita SSRI prescriptions
 # Aggregates per-capita prescription rates by health board and year for normalization.
 per_capita_map_data <- prepare_map_data(
   final_data_with_geometry,  # Input dataset containing per-capita prescription rates
   prescriptions_per_capita,  # Metric to aggregate: prescriptions per capita
-  "avg_prescriptions_per_capita"  # Name of the new column for the aggregated data
-)
+  "avg_prescriptions_per_capita")  # Name of the new column for the aggregated data
 ```
 **Step 3: Define the Map Creation Function**    
 This function standardizes the process of creating maps by defining how data is visualized, labeled, and styled.  
@@ -564,21 +557,17 @@ create_map <- function(data, value_column, title, fill_label) {
   ggplot(data) +  # Initialize the ggplot object with the provided spatial data
     geom_sf(  # Add spatial features (polygons) to the plot
       aes_string(fill = value_column),  # Dynamically specify the fill aesthetic using the value_column
-      color = "black"  # Set the border color for polygons
-    ) +
+      color = "black") +  # Set the border color for polygons
     scale_fill_viridis_c(  # Apply a Viridis color scale for better visual accessibility
       option = "inferno",  # Use the "inferno" color palette
-      name = fill_label    # Set the legend label to the provided fill_label
-    ) +
+      name = fill_label) +   # Set the legend label to the provided fill_label
     labs(  # Add titles and a data source caption
       title = title,  # Main title for the map
-      caption = "Data sources: NHS Scotland and MET Office"  # Attribution for data sources
-    ) +
+      caption = "Data sources: NHS Scotland and MET Office") +  # Attribution for data sources
     theme_minimal() +  # Apply a minimal theme for a clean appearance
     theme(
-      plot.title = element_text(hjust = 0.5, face = "bold"),  # Center-align the title and make it bold
-      legend.position = "right"  # Place the legend on the right side of the map
-    ) +
+      plot.title = element_text(hjust = 0.5, face = "bold"),  # Center-align title & make it bold
+      legend.position = "right") + # Place the legend on the right side of the map
     facet_wrap(~year)  # Create a separate map for each year in the dataset
 }
 ```
@@ -624,8 +613,7 @@ combined_maps <- plot_grid(
   map_prescriptions,          # Map showing total prescriptions
   map_avg_per_capita,         # Map showing per-capita prescriptions
   labels = c("A", "B", "C"),  # Add labels to identify each map (optional)
-  ncol = 1                    # Arrange maps in a vertical layout; change to `ncol = 2` for horizontal layout
-)
+  ncol = 1)                    # Arrange maps in a vertical layout; change to `ncol = 2` for horizontal layout
 
 # Display the combined map layout
 combined_maps
