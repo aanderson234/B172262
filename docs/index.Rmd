@@ -13,7 +13,7 @@ output:
 # Introduction  
 Seasonal Affective Disorder (SAD) is a mood disorder characterized by recurring episodes of depression that occur at specific times of the year, typically in autumn and winter. Seasonal variations in sunshine exposure are thought to be connected to SAD, impacting patients' mental and physical health (Jack *et al.*, 2023).  
 In Scotland, daylight hours fluctuate significantly throughout the year. SAD has been shown to affect **9.3% of primary care patients** in northeast Scotland during winter, with an additional **15.6% experiencing subsyndromal symptoms** (Eagles *et al.*, 1998). Therefore, understanding the relationship between SAD and prescription trends of antidepressants is of public health interest.  
-This analysis focuses on one type of antidepressant, Selective Serotonin Re-uptake Inhibitors (SSRIs), which account for over **50% of all antidepressants prescribed in Scotland** (NHS; Godman *et al.*, 2019). The National Institute for Health and Care Excellence (NICE) recommends treating SAD similarly to other types of depression, including the use of antidepressants like SSRIs (NICE).  
+This analysis focuses on one type of antidepressant, Selective Serotonin Re-uptake Inhibitors (SSRIs), which account for over **50% of all antidepressants prescribed in Scotland** (NHS; Godman *et al.*, 2019). The National Institute for Health and Care Excellence (NICE) recommends treating SAD similarly to other types of depression, including the use of antidepressants like SSRIs.  
 
 # Methods  
 This report will use SSRI prescription patterns across 2022–2023, a period chosen to reflect post-COVID-19 conditions, during which antidepressant prescriptions may have been influenced not only by seasonal but also year-round factors, as SAD patients have been shown to consult frequently throughout the year (Eagles *et al.*, 1998).    
@@ -21,16 +21,15 @@ By exploring the potential correlation between SSRI prescription trends and regi
  
 <div style="background-color: #FFDFBF; padding: 10px; border-left: 4px solid #FF6633;">
 
-### 🔍 **Data Sources**
-The following datasets were used for this analysis:
-
+### 🔍 **Data Sources**  
+The following datasets were used for this analysis:  
 1. **NHS Scotland Prescription Data**  
-   - Source: [NHS Scotland Open Data Platform](https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community)
-   - Provides monthly prescription trends across health boards in Scotland, specifically focusing on SSRIs.
+   - Source: [NHS Scotland Open Data   Platform](https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community)
+   - Provides monthly prescription trends across health boards in Scotland, specifically focusing on SSRIs.  
 
 2. **Sunshine Hours Data**  
-   - Source: [MET Office](https://www.metoffice.gov.uk/)
-   - Includes monthly sunshine hours across Scotland's northern, eastern, and western regions for 2022–2023.
+   - Source: [MET Office](https://www.metoffice.gov.uk/)  
+   - Includes monthly sunshine hours across Scotland's northern, eastern, and western regions for 2022–2023.  
 
 3. **NHS Health Board Shapefiles**  
    - Source: [UK Government Open Geography Portal](https://geoportal.statistics.gov.uk/)
@@ -180,21 +179,17 @@ all_prescription_data <- year_month_grid %>%
 
 **Validation**  
 To ensure accuracy, I validated the processed data by checking for missing values, verifying URLs, and confirming the integrity of parsing operations. The final cleaned dataset is saved as processed_prescriptions.csv for reuse in further analysis.  
-  
-    - Parsing: No parsing issues were identified.  
-    - Missing Data: All rows contained complete prescription counts.  
-    - URL Verification: All resource URLs were valid and accessible. 
     
 **Final Cleaning and Saving**
 ```{r, final cleaning of prescription data}
-# # Standardize month names and clean up columns for merging with other datasets
-# # This ensures that the month names are consistent and unnecessary columns are removed.
+# Standardize month names and clean up columns for merging with other datasets
+# This ensures that the month names are consistent and unnecessary columns are removed.
 all_prescription_data <- all_prescription_data %>%
   mutate(month = month.abb[Month]) %>%  # Convert numeric month values to abbreviated names
   select(-Year)  # Remove the Year column if it's no longer required
 
-# # Save the cleaned dataset as a CSV file for reuse in future analysis
-# # Storing the processed data prevents the need to reprocess raw data repeatedly.
+# Save the cleaned dataset as a CSV file for reuse in future analysis
+# Storing the processed data prevents the need to reprocess raw data repeatedly.
 write_csv(all_prescription_data, here("data", "processed_prescriptions.csv"))
 
 # Load the saved dataset for further analysis
@@ -252,11 +247,9 @@ scotland_summary <- final_data %>%
   summarize(
     total_prescriptions = sum(total_paid_items, na.rm = TRUE),  # Calculate total prescriptions
     avg_sunshine_hours = mean(sunshine_hours, na.rm = TRUE),   # Calculate average sunshine hours
-    .groups = "drop"  # Ungroup the data after summarization
-  ) %>%
+    .groups = "drop") %>%   # Ungroup the data after summarization
   mutate(
-    month = factor(month, levels = month.abb)  # Convert months to ordered factors (e.g., Jan, Feb)
-  ) %>%
+    month = factor(month, levels = month.abb)) %>%  # Convert months to ordered factors (e.g., Jan, Feb)
   arrange(year, month)  # Arrange the data by year and month for chronological order
 ```
 **Attach Geomtery for Maps:**
@@ -278,21 +271,17 @@ scotland_seasonal_summary <- scotland_summary %>%
       month %in% c("Mar", "Apr", "May") ~ "Spring", # Spring: March to May
       month %in% c("Jun", "Jul", "Aug") ~ "Summer", # Summer: June to August
       month %in% c("Sep", "Oct", "Nov") ~ "Autumn"  # Autumn: September to November
-    )
-  ) %>%
+    )) %>%
   group_by(year, season) %>%  # Group data by year and season
   summarize(
     total_prescriptions = sum(total_prescriptions, na.rm = TRUE),  # Total prescriptions for each season
     avg_sunshine_hours = mean(avg_sunshine_hours, na.rm = TRUE),   # Average sunshine hours for each season
-    .groups = "drop"  # Ungroup after summarization
-  )
-
+    .groups = "drop") # Ungroup after summarization
 # Identify the maximum number of prescriptions for each year
 max_prescriptions <- scotland_seasonal_summary %>% 
   group_by(year) %>%  # Group by year
   summarize(
-    max_prescriptions = max(total_prescriptions, na.rm = TRUE)  # Compute maximum seasonal prescriptions per year
-  )
+    max_prescriptions = max(total_prescriptions, na.rm = TRUE))  # Compute maximum seasonal prescriptions per year
 ```
 This figure summarizes the total SSRI prescriptions and average sunshine hours for each season in 2022 and 2023. It highlights key metrics, including the maximum prescriptions for each year and the lowest sunshine hours, to identify seasonal trends in mental health treatment.  
 ```{r summary-table , results='asis', fig.width=5, fig.height=6, fig.cap="Summary Table"}
@@ -359,8 +348,8 @@ seasonal_summary_gt <- scotland_seasonal_summary %>%
 seasonal_summary_gt
 ```
 **Figure 1 Analysis**  
-The seasonal summary table reveals distinct temporal trends in SSRI prescriptions. While **sunshine hours follow predictable seasonal patterns** (lowest in winter, highest in summer), **prescription rates peak in Spring 2023**, likely reflecting a **lag effect** of winter light deprivation (Eagles *et al.*, 1998; Lansdall-Welfare *et al.*, 2019).  
-Conversely, winter prescriptions are **lower than expected**, challenging the assumption that winter is the primary SAD treatment period. The spring peak suggests that symptoms persist beyond winter, leading to delayed treatment-seeking behavior.  
+The seasonal summary table reveals distinct temporal trends in SSRI prescriptions. While **sunshine hours follow predictable seasonal patterns** (lowest in winter, highest in summer), **prescription rates peak in Spring 2023**, likely reflecting a **lag effect** of winter light deprivation (Eagles *et al.*, 1998; Lansdall-Welfare *et al.*, 2019).  #
+However, winter prescriptions are **lower than expected**, challenging the assumption that winter is the primary SAD treatment period. The spring peak suggests that symptoms persist beyond winter, leading to delayed treatment-seeking behavior.  
 To better understand these trends, a deeper examination of **monthly patterns** is necessary, as shown in **Figure 2**.  
 
 ### Figure 2: Monthly Plot  
@@ -417,17 +406,14 @@ Figure 2 highlights monthly variations in SSRI prescriptions, with peaks in **Ma
 # This isolates the dataset to only include records for 2023
 data_2023 <- scotland_summary %>% 
   filter(year == 2023)
-
 # Extract total prescriptions for March 2023
 # This retrieves the total prescription value for the specific month (March) in 2023
 march_2023 <- data_2023 %>% 
   filter(month == "Mar") %>%  # Filter for March
   pull(total_prescriptions)   # Extract the value of total prescriptions
-
 # Calculate the average monthly prescriptions for 2023
 # This computes the mean value of total prescriptions across all months in 2023
 average_2023 <- mean(data_2023$total_prescriptions, na.rm = TRUE)  # Handle any missing values
-
 # Calculate the percentage increase for March compared to the yearly average
 # Formula: ((March value - average value) / average value) * 100
 percentage_increase <- ((march_2023 - average_2023) / average_2023) * 100
@@ -436,11 +422,6 @@ percentage_increase <- ((march_2023 - average_2023) / average_2023) * 100
 
 ### Figure 3: Regional Analysis Maps  
 These maps display regional patterns in SSRI prescriptions, per-capita prescription rates, and average sunlight hours across Scotland. They reveal how geographic disparities, such as sunlight exposure, influence mental health outcomes and treatment trends.  
-
-Subfigures:  
-Map A: Average Sunshine Hours by Health Board  
-Map B: Total SSRI Prescriptions by Health Board  
-Map C: Average Prescriptions Per Capita by Health Board 
 
 **Step 1: Wrangle Map Data**    
 This block defines a helper function to aggregate metrics by health board and year, merge them with spatial data, and prepare the results for mapping.  
@@ -552,7 +533,7 @@ map_avg_per_capita <- create_map(
 ```
 **Step 5: Combine maps**  
 The final step combines the individual maps into a single figure for comparison using `plot_grid()`.  
-```{r, combine maps, fig.width=8, fig.height=8}
+```{r, combine maps, fig.width=7, fig.height=7}
 # Combine individual maps into a single figure
 # This step arranges the three maps (sunlight, total prescriptions, per capita prescriptions)
 # into one visual layout for easy comparison.
@@ -617,14 +598,12 @@ To address these limitations, future studies should:
 
 # Conclusion  
 
-This analysis highlights significant temporal and regional variability in SSRI prescriptions across Scotland:
-
+This analysis highlights significant temporal and regional variability in SSRI prescriptions across Scotland:  
 - **Temporal Trends**: Peaks in **March**, **August**, and **November** suggest a **complex interaction** between environmental factors (e.g., sunlight) and societal drivers (e.g., stress).
-- **Regional Disparities**: Higher per-capita prescriptions in northern regions reflect **compounded challenges** of low sunlight exposure and limited access to alternative mental health resources.
+- **Regional Disparities**: Higher per-capita prescriptions in northern regions reflect **compounded challenges** of low sunlight exposure and limited access to alternative mental health resources.  
+These findings challenge traditional assumptions about SAD-related treatment and underscore the need for **regionally tailored interventions**. Expanding access to light therapy and promoting awareness campaigns during **late winter and early spring** could improve the management of seasonal mood disorders, reducing their burden on public health.  
 
-These findings challenge traditional assumptions about SAD-related treatment and underscore the need for **regionally tailored interventions**. Expanding access to light therapy and promoting awareness campaigns during **late winter and early spring** could improve the management of seasonal mood disorders, reducing their burden on public health.
-
-> 🌍 **Broader Impact**: By addressing these disparities, policymakers can improve mental health outcomes across diverse populations, ensuring equitable access to treatment for those most affected by seasonal mood disorders.
+> 🌍 **Broader Impact**: By addressing these disparities, policymakers can improve mental health outcomes across diverse populations, ensuring equal access to treatment for those most affected by seasonal mood disorders.
 
 # References 
 
@@ -640,14 +619,10 @@ These findings challenge traditional assumptions about SAD-related treatment and
 
 # AI Disclaimer  
 
-During the development of this report, I utilised AI as a tool to enhance both the analytical process and the presentation of the findings. Specifically:  
-**Warnings and Error Resolution:** AI tools helped me to understand, so I could troubleshoot, warnings and errors encountered during data processing. This ensured that the analysis pipeline ran smoothly and efficiently.  
-**File Integration and Parsing:** Guidance was provided by AI to integrate the MET hours text file into the workflow, as this was a type of file I had not encountered before. This included parsing the large datasets and automating the cleaning process for improved efficiency.  
-**CSS File Creation and Optimization:** AI was used to help me understand how to design and refine a custom CSS file that tailored the report for both digital and print outputs. Adjustments included:  
-    1. General font sizing and line spacing for readability.  
-    2. Compact and professional styling for code blocks, figures, and headers.  
-    3. Print-specific optimizations, such as hiding the table of contents (TOC) and   managing spacing for a more polished and efficient print layout.  
-    4. Ensuring code blocks could split across pages without disrupting readability.  
+I developed this report with the assistance of AI tools, which contributed to various aspects of the analytical and presentation process, including:  
+**Error Resolution**: Helping me to understand data processing warnings and errors, so they couold be resolved.  
+**File Parsing**: Guiding the integration, cleaning, and automation of MET hours datasets.
+**CSS Optimization**: Helping to design and refine a custom CSS file for digital and print outputs, focusing on readability, compact styling, and print-specific enhancements.
 
 
 
