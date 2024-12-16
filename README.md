@@ -2,8 +2,6 @@
 ### **Author:** Alex Anderson  
 ### **Date:** 2024-11-25
 
-![SAD Report Banner](https://via.placeholder.com/1200x400.png?text=Seasonal+Affective+Disorder+Analysis)
-
 ## 📖 **Overview**
 This report examines the impact of **Seasonal Affective Disorder (SAD)** on antidepressant prescription trends, particularly **Selective Serotonin Reuptake Inhibitors (SSRIs)**, in Scotland. Using data from **2022–2023**, it explores correlations between regional sunlight exposure and prescription patterns to uncover insights into seasonal mental health challenges.
 
